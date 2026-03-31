@@ -1,0 +1,4680 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zoiko Orbit — AI Assistant</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        /* Swiggy-inspired palette */
+        --org: #fc8019;
+        --org-d: #e8722a;
+        --org-light: rgba(252, 128, 25, 0.12);
+        --org-glow: rgba(252, 128, 25, 0.3);
+        --teal: #00c9a7;
+        --teal-light: rgba(0, 201, 167, 0.12);
+        --dark: #0d0d0d;
+        --panel: #1a1a1a;
+        --card: #242424;
+        --card2: #2e2e2e;
+        --border: rgba(255, 255, 255, 0.08);
+        --border-org: rgba(252, 128, 25, 0.25);
+        --text: #f5f5f5;
+        --muted: #888;
+        --muted2: #aaa;
+        --green: #48bb78;
+        --red: #fc5c65;
+        --gold: #ffd700;
+        --font-h: "Nunito", sans-serif;
+        --font-b: "Inter", sans-serif;
+        --radius: 20px;
+        --radius-sm: 12px;
+      }
+      body {
+        font-family: var(--font-b);
+        background: var(--dark);
+        color: var(--text);
+        height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        padding: 0;
+      }
+
+      /* ── ANIMATED BACKGROUND ── */
+      .bg {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+      }
+      .bg::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse 70% 50% at 20% 10%,
+            rgba(252, 128, 25, 0.08) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse 50% 50% at 80% 80%,
+            rgba(0, 201, 167, 0.05) 0%,
+            transparent 60%
+          );
+      }
+      .bg-dots {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(
+          circle,
+          rgba(252, 128, 25, 0.06) 1px,
+          transparent 1px
+        );
+        background-size: 28px 28px;
+        animation: bgdrift 30s linear infinite;
+      }
+      @keyframes bgdrift {
+        0% {
+          transform: translate(0, 0);
+        }
+        100% {
+          transform: translate(28px, 28px);
+        }
+      }
+
+      /* ── MAIN WIDGET ── */
+      .widget {
+        position: relative;
+        z-index: 10;
+        width: 420px;
+        max-width: calc(100vw - 12px);
+        height: calc(100dvh - 12px);
+        max-height: calc(100dvh - 12px);
+        display: flex;
+        flex-direction: column;
+        border-radius: var(--radius);
+        background: var(--panel);
+        border: 1px solid var(--border);
+        box-shadow:
+          0 0 0 1px rgba(252, 128, 25, 0.06),
+          0 32px 80px rgba(0, 0, 0, 0.8),
+          0 0 60px rgba(252, 128, 25, 0.04);
+        overflow: hidden;
+        animation: widgetUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+      @keyframes widgetUp {
+        from {
+          opacity: 0;
+          transform: translateY(24px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      /* Mobile Responsive */
+      @media (max-width: 640px) {
+        .widget {
+          width: 100%;
+          height: 100dvh;
+          max-width: 100%;
+          border-radius: 0;
+          max-height: 100dvh;
+        }
+      }
+
+      /* ── HEADER — Swiggy app style ── */
+      .hdr {
+        background: linear-gradient(180deg, #1e1008 0%, #1a1a1a 100%);
+        border-bottom: 1px solid var(--border-org);
+        padding: 12px 14px;
+        flex-shrink: 0;
+        position: relative;
+        overflow: hidden;
+      }
+
+      @media (max-width: 640px) {
+        .hdr {
+          padding: 10px 12px;
+        }
+      }
+
+      .hdr::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          rgba(252, 128, 25, 0.06) 0%,
+          transparent 60%
+        );
+      }
+      .hdr-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: relative;
+      }
+      .avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: #fff;
+        padding: 3px;
+        flex-shrink: 0;
+        position: relative;
+        box-shadow:
+          0 0 0 2px var(--org),
+          0 4px 16px var(--org-glow);
+      }
+      .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 11px;
+      }
+      .status-dot {
+        position: absolute;
+        bottom: 0px;
+        right: 0px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--green);
+        border: 2px solid var(--panel);
+        box-shadow: 0 0 6px rgba(72, 187, 120, 0.6);
+        animation: pulse 2.5s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.7;
+          transform: scale(0.95);
+        }
+      }
+      .hdr-info {
+        flex: 1;
+      }
+      .hdr-name {
+        font-family: var(--font-h);
+        font-weight: 800;
+        font-size: 15.5px;
+        color: var(--text);
+        letter-spacing: -0.01em;
+      }
+
+      @media (max-width: 640px) {
+        .hdr-name {
+          font-size: 14px;
+        }
+      }
+
+      .hdr-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--org-light);
+        border: 1px solid var(--border-org);
+        border-radius: 20px;
+        padding: 2px 8px;
+        font-size: 10px;
+        color: var(--org);
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin-top: 2px;
+      }
+
+      @media (max-width: 640px) {
+        .hdr-badge {
+          font-size: 9px;
+          padding: 2px 7px;
+        }
+      }
+
+      .hdr-live {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 10.5px;
+        color: var(--green);
+        font-weight: 600;
+        margin-top: 1px;
+      }
+
+      @media (max-width: 640px) {
+        .hdr-live {
+          font-size: 9px;
+        }
+      }
+      .hdr-live::before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--green);
+        animation: blink 1.5s infinite;
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+      .hdr-actions {
+        display: flex;
+        gap: 6px;
+      }
+
+      @media (max-width: 640px) {
+        .hdr-actions {
+          gap: 4px;
+        }
+      }
+
+      .hbtn {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        transition: 0.18s;
+      }
+
+      @media (max-width: 640px) {
+        .hbtn {
+          width: 30px;
+          height: 30px;
+          font-size: 14px;
+        }
+      }
+      .hbtn:hover {
+        background: var(--org-light);
+        color: var(--org);
+        border-color: var(--border-org);
+      }
+      .hbtn.active {
+        background: var(--org-light);
+        color: var(--org);
+        border-color: var(--border-org);
+      }
+
+      /* ── AGENT BAR ── */
+      .agent-bar {
+        background: rgba(252, 128, 25, 0.06);
+        border-bottom: 1px solid var(--border-org);
+        padding: 6px 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        color: var(--muted2);
+        flex-shrink: 0;
+        flex-wrap: wrap;
+      }
+      .agent-bar span {
+        color: var(--org);
+        font-weight: 700;
+      }
+      .agent-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--org);
+        opacity: 0.6;
+        animation: pulse 2s infinite;
+      }
+      .prod-badge {
+        background: rgba(72, 187, 120, 0.12);
+        border: 1px solid rgba(72, 187, 120, 0.25);
+        border-radius: 20px;
+        padding: 1px 8px;
+        font-size: 9.5px;
+        color: var(--green);
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        margin-left: auto;
+      }
+
+      /* ── TOOL BAR ── */
+      .tool-bar {
+        height: 0;
+        overflow: hidden;
+        flex-shrink: 0;
+        transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        background: rgba(252, 128, 25, 0.05);
+        border-bottom: 0 solid var(--border-org);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 14px;
+        font-size: 11.5px;
+        color: var(--org);
+        font-weight: 600;
+      }
+      .tool-bar.on {
+        height: 34px;
+        border-bottom-width: 1px;
+      }
+      .tool-spin {
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(252, 128, 25, 0.2);
+        border-top-color: var(--org);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        flex-shrink: 0;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ── VOICE BAR ── */
+      .vbar-wrap {
+        height: 0;
+        overflow: hidden;
+        flex-shrink: 0;
+        transition: height 0.3s;
+        background: rgba(252, 128, 25, 0.04);
+        border-bottom: 0 solid var(--border-org);
+      }
+      .vbar-wrap.on {
+        height: 48px;
+        border-bottom-width: 1px;
+      }
+      .vbar-inner {
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+      }
+      .vb {
+        width: 3px;
+        border-radius: 3px;
+        background: var(--org);
+      }
+      .vb:nth-child(1) {
+        animation: wav 0.9s 0s ease-in-out infinite;
+        height: 6px;
+      }
+      .vb:nth-child(2) {
+        animation: wav 0.9s 0.07s ease-in-out infinite;
+        height: 14px;
+      }
+      .vb:nth-child(3) {
+        animation: wav 0.9s 0.14s ease-in-out infinite;
+        height: 24px;
+      }
+      .vb:nth-child(4) {
+        animation: wav 0.9s 0.1s ease-in-out infinite;
+        height: 30px;
+      }
+      .vb:nth-child(5) {
+        animation: wav 0.9s 0.03s ease-in-out infinite;
+        height: 18px;
+      }
+      .vb:nth-child(6) {
+        animation: wav 0.9s 0.18s ease-in-out infinite;
+        height: 26px;
+      }
+      .vb:nth-child(7) {
+        animation: wav 0.9s 0.07s ease-in-out infinite;
+        height: 16px;
+      }
+      .vb:nth-child(8) {
+        animation: wav 0.9s 0.14s ease-in-out infinite;
+        height: 22px;
+      }
+      .vb:nth-child(9) {
+        animation: wav 0.9s 0.21s ease-in-out infinite;
+        height: 10px;
+      }
+      @keyframes wav {
+        0%,
+        100% {
+          transform: scaleY(1);
+          opacity: 0.5;
+        }
+        50% {
+          transform: scaleY(2.2);
+          opacity: 1;
+        }
+      }
+      .vlabel {
+        font-size: 10.5px;
+        color: var(--org);
+        font-family: var(--font-h);
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        margin-left: 12px;
+      }
+
+      /* ── MESSAGES ── */
+      .msgs {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 14px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        scroll-behavior: smooth;
+      }
+
+      @media (max-width: 640px) {
+        .msgs {
+          padding: 12px 10px;
+          gap: 8px;
+        }
+      }
+
+      .msgs::-webkit-scrollbar {
+        width: 3px;
+      }
+      .msgs::-webkit-scrollbar-thumb {
+        background: rgba(252, 128, 25, 0.2);
+        border-radius: 3px;
+      }
+
+      /* ── WELCOME ── */
+      .welcome {
+        text-align: center;
+        padding: 6px 0 2px;
+        animation: fadeIn 0.5s ease;
+      }
+      .wlogo img {
+        height: 44px;
+        width: auto;
+        object-fit: contain;
+        filter: drop-shadow(0 0 12px rgba(252, 128, 25, 0.4));
+      }
+      .wsub {
+        font-size: 11.5px;
+        color: var(--muted);
+        margin-top: 5px;
+        font-weight: 500;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      /* ── QUICK CHIPS ── */
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+        margin: 4px 0;
+      }
+
+      @media (max-width: 640px) {
+        .chips {
+          gap: 5px;
+          margin: 3px 0;
+        }
+      }
+
+      .chip {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        border: 1px solid var(--border);
+        background: rgba(252, 128, 25, 0.06);
+        color: var(--org);
+        cursor: pointer;
+        transition: 0.18s;
+        white-space: nowrap;
+        font-family: var(--font-h);
+        font-weight: 700;
+      }
+
+      @media (max-width: 640px) {
+        .chip {
+          padding: 5px 10px;
+          font-size: 10px;
+        }
+      }
+
+      .chip:hover {
+        background: rgba(252, 128, 25, 0.18);
+        border-color: var(--border-org);
+        transform: translateY(-1px);
+      }
+
+      /* ── MESSAGES ── */
+      .msg {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        animation: msgIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+        max-width: 92%;
+      }
+
+      @media (max-width: 640px) {
+        .msg {
+          gap: 6px;
+          max-width: 95%;
+        }
+      }
+
+      @keyframes msgIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .msg.user {
+        flex-direction: row-reverse;
+        align-self: flex-end;
+      }
+      .msg.bot {
+        align-self: flex-start;
+      }
+      .mava {
+        width: 26px;
+        height: 26px;
+        border-radius: 9px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      @media (max-width: 640px) {
+        .mava {
+          width: 24px;
+          height: 24px;
+        }
+      }
+
+      .msg.bot .mava {
+        background: #fff;
+        padding: 2px;
+        box-shadow: 0 0 0 2px var(--org-light);
+      }
+      .msg.user .mava {
+        background: linear-gradient(135deg, #1e2b40, #2a3a54);
+        font-size: 12px;
+      }
+      .mava img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .bubble {
+        padding: 10px 13px;
+        border-radius: 16px;
+        font-size: 13px;
+        line-height: 1.62;
+        max-width: 100%;
+        word-wrap: break-word;
+      }
+
+      @media (max-width: 640px) {
+        .bubble {
+          padding: 9px 12px;
+          font-size: 13px;
+          border-radius: 14px;
+        }
+      }
+
+      .msg.user .bubble {
+        background: linear-gradient(135deg, var(--org), var(--org-d));
+        color: #fff;
+        border-bottom-right-radius: 4px;
+        font-weight: 500;
+        box-shadow: 0 4px 14px rgba(252, 128, 25, 0.3);
+      }
+      .msg.bot .bubble {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-bottom-left-radius: 4px;
+        color: var(--text);
+      }
+
+      /* ── TYPING DOTS ── */
+      .dots {
+        display: flex;
+        gap: 4px;
+        padding: 3px 0;
+      }
+      .dots span {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--org);
+        opacity: 0.5;
+        animation: dotB 1.1s ease infinite;
+      }
+      .dots span:nth-child(2) {
+        animation-delay: 0.18s;
+      }
+      .dots span:nth-child(3) {
+        animation-delay: 0.36s;
+      }
+      @keyframes dotB {
+        0%,
+        60%,
+        100% {
+          transform: none;
+          opacity: 0.4;
+        }
+        30% {
+          transform: translateY(-5px);
+          opacity: 1;
+        }
+      }
+
+      /* ── REACTIONS ── */
+      .reactions {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 5px;
+        flex-wrap: wrap;
+      }
+      .react-btn,
+      .speak-btn,
+      .copy-btn {
+        background: none;
+        border: 1px solid transparent;
+        cursor: pointer;
+        font-size: 11px;
+        color: var(--muted);
+        transition: 0.18s;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        padding: 3px 7px;
+        border-radius: 8px;
+        font-family: var(--font-b);
+      }
+      .react-btn:hover,
+      .speak-btn:hover,
+      .copy-btn:hover {
+        background: rgba(252, 128, 25, 0.08);
+        color: var(--org);
+        border-color: var(--border-org);
+      }
+      .react-btn.liked {
+        color: var(--green);
+        border-color: rgba(72, 187, 120, 0.3);
+        background: rgba(72, 187, 120, 0.06);
+      }
+      .react-btn.disliked {
+        color: var(--red);
+        border-color: rgba(252, 92, 101, 0.3);
+        background: rgba(252, 92, 101, 0.06);
+      }
+      .speak-btn.on {
+        color: var(--org);
+        animation: spkPulse 1s infinite;
+      }
+      @keyframes spkPulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+      .copy-btn.done {
+        color: var(--green);
+      }
+
+      /* ── SUGGESTION CHIPS ── */
+      .suggestions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 6px;
+      }
+      .sug {
+        padding: 5px 11px;
+        border-radius: 12px;
+        font-size: 11px;
+        border: 1px solid var(--border);
+        background: rgba(252, 128, 25, 0.05);
+        color: var(--org);
+        cursor: pointer;
+        transition: 0.18s;
+        font-weight: 600;
+        font-family: var(--font-h);
+      }
+      .sug:hover {
+        background: rgba(252, 128, 25, 0.15);
+        border-color: var(--border-org);
+      }
+
+      /* ══ CARD SYSTEM — Swiggy-style ══ */
+
+      /* Menu Cards — like Swiggy categories */
+      .menu-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 8px;
+        width: 100%;
+      }
+
+      @media (max-width: 640px) {
+        .menu-cards {
+          gap: 5px;
+          margin-top: 6px;
+        }
+      }
+
+      .menu-card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 13px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--card);
+        cursor: pointer;
+        transition: all 0.16s;
+        width: 100%;
+        text-align: left;
+        font-family: var(--font-b);
+        position: relative;
+        overflow: hidden;
+      }
+
+      @media (max-width: 640px) {
+        .menu-card {
+          padding: 10px 12px;
+          gap: 9px;
+          font-size: 13px;
+        }
+      }
+      .menu-card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: var(--org);
+        opacity: 0;
+        transition: 0.16s;
+        border-radius: 0 3px 3px 0;
+      }
+      .menu-card:hover {
+        background: rgba(252, 128, 25, 0.08);
+        border-color: var(--border-org);
+        transform: translateX(2px);
+      }
+      .menu-card:hover::before {
+        opacity: 1;
+      }
+      .menu-card:active {
+        transform: scale(0.98);
+      }
+      .menu-card-ico {
+        font-size: 20px;
+        flex-shrink: 0;
+        width: 30px;
+        text-align: center;
+      }
+      .menu-card-body {
+        flex: 1;
+      }
+      .menu-card-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        line-height: 1.3;
+        font-family: var(--font-h);
+      }
+      .menu-card-sub {
+        font-size: 10.5px;
+        color: var(--muted);
+        margin-top: 1px;
+      }
+      .menu-card-arr {
+        color: var(--org);
+        font-size: 16px;
+        flex-shrink: 0;
+        opacity: 0.7;
+      }
+
+      /* Plan Cards — horizontal scroll like Swiggy restaurant cards */
+      .plan-scroll {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 4px 2px 10px;
+        margin-top: 8px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .plan-scroll::-webkit-scrollbar {
+        display: none;
+      }
+      .plan-card {
+        flex-shrink: 0;
+        width: 150px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        padding: 14px 12px;
+        cursor: pointer;
+        transition: all 0.18s;
+        position: relative;
+        overflow: hidden;
+      }
+      .plan-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          135deg,
+          rgba(252, 128, 25, 0.06),
+          transparent 60%
+        );
+        opacity: 0;
+        transition: 0.18s;
+      }
+      .plan-card:hover {
+        border-color: var(--org);
+        box-shadow:
+          0 0 0 1px var(--org),
+          0 6px 20px rgba(252, 128, 25, 0.2);
+        transform: translateY(-2px);
+      }
+      .plan-card:hover::after {
+        opacity: 1;
+      }
+      .plan-card-badge {
+        display: inline-block;
+        font-size: 9px;
+        font-weight: 800;
+        background: var(--org);
+        color: #fff;
+        border-radius: 20px;
+        padding: 2px 7px;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .plan-card-name {
+        font-family: var(--font-h);
+        font-weight: 800;
+        font-size: 12px;
+        color: var(--org);
+        margin-bottom: 4px;
+      }
+      .plan-card-price {
+        font-size: 22px;
+        font-weight: 900;
+        color: var(--text);
+        line-height: 1;
+        font-family: var(--font-h);
+      }
+      .plan-card-price span {
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--muted);
+        font-family: var(--font-b);
+      }
+      .plan-card-data {
+        font-size: 11px;
+        color: var(--muted2);
+        margin-top: 4px;
+        font-weight: 600;
+      }
+      .plan-card-perks {
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .plan-card-perk {
+        font-size: 10px;
+        color: var(--muted2);
+      }
+      .plan-card-perk::before {
+        content: "✓ ";
+        color: var(--org);
+        font-weight: 800;
+      }
+      .plan-card-btn {
+        width: 100%;
+        margin-top: 10px;
+        padding: 7px;
+        border-radius: 9px;
+        border: none;
+        background: var(--org);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: var(--font-h);
+        transition: 0.16s;
+        letter-spacing: 0.02em;
+      }
+      .plan-card-btn:hover {
+        background: var(--org-d);
+        transform: scale(1.02);
+      }
+
+      /* Info Card — like Swiggy restaurant details */
+      .info-card {
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--card);
+        overflow: hidden;
+        margin-top: 8px;
+      }
+      .info-card-hdr {
+        background: linear-gradient(
+          90deg,
+          rgba(252, 128, 25, 0.14),
+          rgba(252, 128, 25, 0.04)
+        );
+        padding: 10px 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+      .info-card-hdr-ico {
+        font-size: 17px;
+      }
+      .info-card-hdr-title {
+        font-family: var(--font-h);
+        font-weight: 800;
+        font-size: 12.5px;
+        color: var(--org);
+      }
+      .info-card-body {
+        padding: 4px 0;
+      }
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 7px 13px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      }
+      .info-row:last-child {
+        border-bottom: none;
+      }
+      .info-row-label {
+        font-size: 11.5px;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .info-row-val {
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--text);
+        text-align: right;
+      }
+      .info-row-val.org {
+        color: var(--org);
+      }
+      .info-row-val.green {
+        color: var(--green);
+      }
+
+      /* Step Card */
+      .step-card {
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--card);
+        padding: 13px;
+        margin-top: 8px;
+      }
+      .step-card-title {
+        font-size: 9.5px;
+        color: var(--muted);
+        margin-bottom: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .step-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        position: relative;
+        padding-bottom: 13px;
+      }
+      .step-item:last-child {
+        padding-bottom: 0;
+      }
+      .step-item::before {
+        content: "";
+        position: absolute;
+        left: 12px;
+        top: 26px;
+        bottom: 0;
+        width: 1.5px;
+        background: rgba(252, 128, 25, 0.15);
+      }
+      .step-item:last-child::before {
+        display: none;
+      }
+      .step-num {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 2px solid var(--org);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--org);
+        flex-shrink: 0;
+        background: rgba(252, 128, 25, 0.08);
+        font-family: var(--font-h);
+      }
+      .step-body-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text);
+        padding-top: 2px;
+        line-height: 1.4;
+        font-family: var(--font-h);
+      }
+      .step-body-sub {
+        font-size: 10.5px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+
+      /* Compare Card — like Swiggy comparison */
+      .compare-card {
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--card);
+        overflow: hidden;
+        margin-top: 8px;
+      }
+      .compare-hdr {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        background: rgba(252, 128, 25, 0.08);
+        border-bottom: 1px solid var(--border);
+      }
+      .compare-hdr-cell {
+        padding: 8px 6px;
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--org);
+        text-align: center;
+        font-family: var(--font-h);
+        letter-spacing: 0.02em;
+        border-right: 1px solid var(--border);
+      }
+      .compare-hdr-cell:first-child {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .compare-hdr-cell:last-child {
+        border-right: none;
+      }
+      .compare-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      }
+      .compare-row:last-child {
+        border-bottom: none;
+      }
+      .compare-cell {
+        padding: 7px 6px;
+        font-size: 10.5px;
+        text-align: center;
+        border-right: 1px solid rgba(255, 255, 255, 0.03);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .compare-cell:last-child {
+        border-right: none;
+      }
+      .compare-cell.label {
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 600;
+        text-align: left;
+        justify-content: flex-start;
+        padding-left: 10px;
+      }
+      .compare-cell.win {
+        color: var(--green);
+        font-weight: 700;
+      }
+      .compare-cell.val {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      /* Action Bar — like Swiggy CTA buttons */
+      .action-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 10px;
+      }
+
+      @media (max-width: 640px) {
+        .action-bar {
+          gap: 5px;
+          margin-top: 8px;
+        }
+      }
+
+      .act-btn {
+        padding: 8px 12px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: var(--card2);
+        color: var(--text);
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: var(--font-h);
+        transition: 0.16s;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 640px) {
+        .act-btn {
+          padding: 7px 11px;
+          font-size: 11px;
+        }
+      }
+
+      .act-btn:hover {
+        background: rgba(252, 128, 25, 0.12);
+        border-color: var(--border-org);
+        color: var(--org);
+        transform: translateY(-1px);
+      }
+      .act-btn:active {
+        transform: scale(0.97);
+      }
+      .act-btn.primary {
+        background: var(--org);
+        color: #fff;
+        border-color: var(--org);
+        box-shadow: 0 4px 12px rgba(252, 128, 25, 0.35);
+      }
+      .act-btn.primary:hover {
+        background: var(--org-d);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(252, 128, 25, 0.45);
+      }
+      .act-btn.green {
+        background: var(--green);
+        color: #fff;
+        border-color: var(--green);
+      }
+      .act-btn.green:hover {
+        filter: brightness(1.08);
+      }
+
+      /* Notification strip */
+      .notif-strip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        font-size: 11.5px;
+        margin-top: 8px;
+        font-weight: 500;
+      }
+      .notif-strip.success {
+        background: rgba(72, 187, 120, 0.08);
+        border: 1px solid rgba(72, 187, 120, 0.2);
+        color: var(--green);
+      }
+      .notif-strip.info {
+        background: rgba(252, 128, 25, 0.07);
+        border: 1px solid rgba(252, 128, 25, 0.2);
+        color: var(--org);
+      }
+      .notif-strip.warn {
+        background: rgba(255, 179, 71, 0.07);
+        border: 1px solid rgba(255, 179, 71, 0.2);
+        color: #ffb347;
+      }
+      .notif-strip.teal {
+        background: rgba(0, 201, 167, 0.07);
+        border: 1px solid rgba(0, 201, 167, 0.2);
+        color: var(--teal);
+      }
+
+      /* Savings Card */
+      .savings-card {
+        border-radius: var(--radius-sm);
+        border: 1px solid rgba(72, 187, 120, 0.25);
+        background: linear-gradient(
+          135deg,
+          rgba(72, 187, 120, 0.08),
+          rgba(72, 187, 120, 0.03)
+        );
+        padding: 14px;
+        margin-top: 8px;
+        overflow: hidden;
+        position: relative;
+      }
+      .savings-card::before {
+        content: "💚";
+        position: absolute;
+        right: -8px;
+        bottom: -8px;
+        font-size: 60px;
+        opacity: 0.08;
+      }
+      .savings-big {
+        font-family: var(--font-h);
+        font-size: 28px;
+        font-weight: 900;
+        color: var(--green);
+      }
+      .savings-big span {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+      .savings-sub {
+        font-size: 11.5px;
+        color: var(--muted2);
+        margin-top: 3px;
+      }
+      .savings-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(72, 187, 120, 0.1);
+        font-size: 11.5px;
+      }
+      .savings-row:last-child {
+        border-bottom: none;
+      }
+
+      /* Satisfaction Card */
+      .sat-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 13px;
+        margin-top: 6px;
+        animation: fadeIn 0.4s ease;
+      }
+      .sat-title {
+        font-size: 11.5px;
+        color: var(--muted);
+        margin-bottom: 8px;
+        font-weight: 600;
+      }
+      .sat-stars {
+        display: flex;
+        gap: 6px;
+      }
+      .star {
+        font-size: 24px;
+        cursor: pointer;
+        transition: 0.15s;
+        filter: grayscale(1) opacity(0.35);
+      }
+      .star:hover,
+      .star.sel {
+        filter: none;
+        transform: scale(1.2);
+      }
+      .sat-thanks {
+        font-size: 11.5px;
+        color: var(--org);
+        margin-top: 6px;
+        font-weight: 700;
+      }
+
+      /* Escalation Card */
+      .esc-card {
+        background: linear-gradient(
+          135deg,
+          rgba(252, 92, 101, 0.08),
+          rgba(252, 92, 101, 0.04)
+        );
+        border: 1px solid rgba(252, 92, 101, 0.2);
+        border-radius: var(--radius-sm);
+        padding: 13px;
+        margin-top: 6px;
+      }
+      .esc-title {
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--red);
+        margin-bottom: 8px;
+        font-family: var(--font-h);
+      }
+      .esc-form input {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 9px;
+        padding: 8px 11px;
+        font-size: 12px;
+        color: var(--text);
+        margin-bottom: 6px;
+        font-family: var(--font-b);
+        outline: none;
+        transition: 0.18s;
+      }
+      .esc-form input:focus {
+        border-color: rgba(252, 92, 101, 0.4);
+        background: rgba(255, 255, 255, 0.07);
+      }
+      .esc-form input::placeholder {
+        color: var(--muted);
+      }
+      .esc-submit {
+        width: 100%;
+        padding: 9px;
+        border-radius: 10px;
+        border: none;
+        background: var(--red);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: var(--font-h);
+        transition: 0.18s;
+      }
+      .esc-submit:hover {
+        background: #e04050;
+      }
+
+      /* ── INPUT AREA ── */
+      .input-area {
+        padding: 10px 10px 14px;
+        border-top: 1px solid var(--border);
+        background: var(--panel);
+        flex-shrink: 0;
+      }
+
+      @media (max-width: 640px) {
+        .input-area {
+          padding: 8px 8px 10px;
+        }
+      }
+
+      .input-row {
+        display: flex;
+        gap: 7px;
+        align-items: flex-end;
+      }
+
+      @media (max-width: 640px) {
+        .input-row {
+          gap: 6px;
+        }
+      }
+
+      .txt {
+        flex: 1;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px 13px;
+        font-family: var(--font-b);
+        font-size: 13px;
+        color: var(--text);
+        outline: none;
+        resize: none;
+        max-height: 90px;
+        transition: 0.18s;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 640px) {
+        .txt {
+          padding: 9px 11px;
+          font-size: 14px;
+          max-height: 80px;
+        }
+      }
+
+      .txt::placeholder {
+        color: var(--muted);
+      }
+      .txt:focus {
+        border-color: var(--border-org);
+        box-shadow: 0 0 0 3px rgba(252, 128, 25, 0.08);
+      }
+      .ibtn {
+        width: 40px;
+        height: 40px;
+        border-radius: 11px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        transition: 0.18s;
+        flex-shrink: 0;
+      }
+
+      @media (max-width: 640px) {
+        .ibtn {
+          width: 36px;
+          height: 36px;
+          font-size: 15px;
+        }
+      }
+
+      .ibtn:hover {
+        background: rgba(252, 128, 25, 0.1);
+        color: var(--org);
+        border-color: var(--border-org);
+      }
+      .send {
+        width: 40px;
+        height: 40px;
+        border-radius: 11px;
+        border: none;
+        background: linear-gradient(135deg, var(--org), var(--org-d));
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(252, 128, 25, 0.4);
+        transition: 0.18s;
+      }
+
+      @media (max-width: 640px) {
+        .send {
+          width: 36px;
+          height: 36px;
+          font-size: 15px;
+          box-shadow: 0 2px 8px rgba(252, 128, 25, 0.4);
+        }
+      }
+
+      .send:hover {
+        transform: scale(1.06);
+        box-shadow: 0 6px 18px rgba(252, 128, 25, 0.55);
+      }
+      .send:active {
+        transform: scale(0.96);
+      }
+      .send:disabled {
+        opacity: 0.45;
+        cursor: default;
+        transform: none;
+      }
+      .mic-on {
+        background: rgba(252, 92, 101, 0.15) !important;
+        border-color: var(--red) !important;
+        color: var(--red) !important;
+        animation: micPulse 1s infinite;
+      }
+      @keyframes micPulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(252, 92, 101, 0.3);
+        }
+        50% {
+          box-shadow: 0 0 0 7px rgba(252, 92, 101, 0);
+        }
+      }
+      .char-count {
+        font-size: 10px;
+        color: var(--muted);
+        text-align: right;
+        margin-top: 3px;
+      }
+
+      @media (max-width: 640px) {
+        .char-count {
+          font-size: 9px;
+        }
+      }
+
+      .char-count.warn {
+        color: #ffb347;
+      }
+      .char-count.over {
+        color: var(--red);
+      }
+      .hint {
+        font-size: 10px;
+        color: var(--muted);
+        text-align: center;
+        margin-top: 5px;
+      }
+
+      @media (max-width: 640px) {
+        .hint {
+          font-size: 9px;
+          display: none;
+        }
+      }
+
+      .hint kbd {
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        font-family: monospace;
+        font-size: 9px;
+      }
+
+      /* ── TOAST ── */
+      .toast {
+        position: fixed;
+        bottom: 72px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--card);
+        border: 1px solid var(--border-org);
+        border-radius: 30px;
+        padding: 8px 18px;
+        font-size: 12px;
+        color: var(--text);
+        z-index: 9999;
+        white-space: nowrap;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
+        animation: toastIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+      @keyframes toastIn {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
+      @keyframes toastOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+          transform: translateX(-50%) translateY(-6px);
+        }
+      }
+
+      /* ── HISTORY MODAL ── */
+      .hist-ov {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: fadeIn 0.2s ease;
+      }
+      .hist-box {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        width: 100%;
+        max-width: 420px;
+        max-height: 70vh;
+        display: flex;
+        flex-direction: column;
+        animation: widgetUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .hist-hdr {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px 17px;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+      .hist-body {
+        overflow-y: auto;
+        padding: 10px 13px;
+        flex: 1;
+      }
+      .hist-item {
+        margin: 7px 0;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 9px 11px;
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .hist-item summary {
+        cursor: pointer;
+        font-weight: 700;
+        color: var(--org);
+        font-size: 11.5px;
+        list-style: none;
+        font-family: var(--font-h);
+      }
+      .hist-item summary::before {
+        content: "▶ ";
+        font-size: 9px;
+      }
+      .hist-item[open] summary::before {
+        content: "▼ ";
+      }
+
+      /* ── PERM MODAL ── */
+      .perm-ov {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: fadeIn 0.2s ease;
+      }
+      .perm-box {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px 20px;
+        max-width: 320px;
+        width: 100%;
+      }
+      .perm-ico {
+        font-size: 36px;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+      .perm-ttl {
+        font-family: var(--font-h);
+        font-weight: 800;
+        font-size: 15px;
+        text-align: center;
+        margin-bottom: 6px;
+      }
+      .perm-desc {
+        font-size: 12px;
+        color: var(--muted);
+        text-align: center;
+        line-height: 1.6;
+        margin-bottom: 14px;
+      }
+      .perm-steps {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 10px;
+        padding: 11px 13px;
+        margin-bottom: 14px;
+        border: 1px solid var(--border);
+      }
+      .pstep {
+        font-size: 11.5px;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 7px;
+        line-height: 1.5;
+      }
+      .pstep:last-child {
+        margin-bottom: 0;
+      }
+      .pnum {
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        background: var(--org);
+        color: #fff;
+        font-size: 9.5px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .pbtns {
+        display: flex;
+        gap: 7px;
+      }
+      .pbtn {
+        flex: 1;
+        padding: 9px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-family: var(--font-h);
+        cursor: pointer;
+        transition: 0.18s;
+        border: 1px solid var(--border);
+        font-weight: 700;
+      }
+      .pbtn.pri {
+        background: var(--org);
+        color: #fff;
+        border-color: var(--org);
+      }
+      .pbtn.pri:hover {
+        background: var(--org-d);
+      }
+      .pbtn.sec {
+        background: transparent;
+        color: var(--muted);
+      }
+
+      /* ── RESPONSIVE ── */
+      @media (max-width: 600px) {
+        body {
+          align-items: flex-end;
+          justify-content: center;
+          padding: 0;
+        }
+        .widget {
+          border-radius: 20px 20px 0 0;
+          width: 100vw;
+          max-width: 100vw;
+          height: 94dvh;
+          max-height: 94dvh;
+        }
+        .hdr {
+          padding: 10px 12px;
+        }
+        .msgs {
+          padding: 12px 10px;
+        }
+        .bubble {
+          font-size: 12.5px;
+          padding: 9px 11px;
+        }
+        .hint {
+          display: none;
+        }
+        .input-area {
+          padding: 8px 8px 18px;
+        }
+      }
+      @media (min-width: 601px) and (max-width: 1024px) {
+        .widget {
+          width: min(560px, calc(100vw - 40px));
+          height: min(800px, calc(100vh - 40px));
+          border-radius: 24px;
+        }
+        .hdr {
+          padding: 14px 18px;
+        }
+        .msgs {
+          padding: 18px 16px;
+          gap: 12px;
+        }
+        .bubble {
+          font-size: 13.5px;
+          padding: 11px 15px;
+        }
+      }
+      @media (min-width: 1025px) {
+        .widget {
+          width: 460px;
+          height: min(760px, calc(100vh - 60px));
+          border-radius: 24px;
+        }
+        .msgs {
+          padding: 16px 14px;
+          gap: 11px;
+        }
+      }
+      @media (min-width: 1440px) {
+        .widget {
+          width: 500px;
+          height: min(800px, calc(100vh - 80px));
+        }
+      }
+
+      /* ── CLICKABLE LINK BUTTONS ── */
+      .link-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(252, 128, 25, 0.1);
+        border: 1px solid rgba(252, 128, 25, 0.28);
+        border-radius: 9px;
+        padding: 7px 13px;
+        color: var(--org);
+        font-size: 12px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: 0.16s;
+        font-family: var(--font-h);
+        white-space: nowrap;
+      }
+      .link-btn:hover {
+        background: rgba(252, 128, 25, 0.22);
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(252, 128, 25, 0.25);
+      }
+      .link-btn:active {
+        transform: scale(0.97);
+      }
+      .links-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      /* ── CONVERSATION STEP LIST ── */
+      .conv-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      }
+      .conv-step:last-child {
+        border-bottom: none;
+      }
+      .conv-step-num {
+        min-width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--org);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-family: var(--font-h);
+      }
+      .conv-step-txt {
+        font-size: 12.5px;
+        color: var(--text);
+        line-height: 1.5;
+        padding-top: 1px;
+      }
+      .conv-step-txt a {
+        color: var(--org);
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .conv-step-txt a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg"><div class="bg-dots"></div></div>
+    <div class="widget" id="widget">
+      <!-- HEADER -->
+      <div class="hdr">
+        <div class="hdr-top">
+          <div class="avatar">
+            <img
+              src="data:image/png;base64,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"
+              alt="Zoikon"
+            />
+            <div class="status-dot"></div>
+          </div>
+          <div class="hdr-info">
+            <div class="hdr-name">Zoikon ✦</div>
+            <div class="hdr-badge">⚡ AI ASSISTANT</div>
+            <div class="hdr-live">Live · Zoiko Orbit · 10 tools active</div>
+          </div>
+          <div class="hdr-actions">
+            <button class="hbtn" id="muteBtn" title="Toggle voice">🔊</button>
+            <button class="hbtn" id="histBtn" title="Chat history">📋</button>
+            <button class="hbtn" id="clearBtn" title="New chat">✏️</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AGENT BAR -->
+      <div class="agent-bar">
+        <div class="agent-dot"></div>
+        🤖 Zoiko Orbit AI &nbsp;·&nbsp;
+        <span>10 Tools · Zero Hallucinations</span> &nbsp;·&nbsp;
+        <span id="sessionTime">Session: 0m</span>
+        <div class="prod-badge">✅ PRODUCTION</div>
+      </div>
+
+      <!-- TOOL ACTIVITY BAR -->
+      <div class="tool-bar" id="toolBar">
+        <div class="tool-spin"></div>
+        <span id="toolLabel">Processing...</span>
+      </div>
+
+      <!-- VOICE VISUALIZER -->
+      <div class="vbar-wrap" id="vbarWrap">
+        <div class="vbar-inner">
+          <div class="vb"></div>
+          <div class="vb"></div>
+          <div class="vb"></div>
+          <div class="vb"></div>
+          <div class="vb"></div>
+          <div class="vb"></div>
+          <div class="vb"></div>
+          <div class="vb"></div>
+          <div class="vb"></div>
+          <span class="vlabel" id="vlabel">Listening...</span>
+        </div>
+      </div>
+
+      <!-- MESSAGES -->
+      <div class="msgs" id="msgs">
+        <div class="welcome" id="welcome">
+          <div class="wlogo">
+            <img
+              src="data:image/png;base64,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"
+              alt="Zoikon"
+            />
+          </div>
+          <div class="wsub">
+            Zoiko Orbit AI — Your 24/7 travel connectivity assistant
+          </div>
+        </div>
+        <div class="chips" id="chips">
+          <div class="chip" onclick="quick('Show me available eSIM plans')">
+            📱 eSIM Plans
+          </div>
+          <div class="chip" onclick="quick('How do I activate my eSIM?')">
+            🔌 Activate eSIM
+          </div>
+          <div class="chip" onclick="quick('Which plan is best for Europe?')">
+            🌍 Travel Plans
+          </div>
+          <div
+            class="chip"
+            onclick="quick('Tell me about enterprise bulk SIM options')"
+          >
+            🏢 Enterprise
+          </div>
+          <div
+            class="chip"
+            onclick="quick('Tell me about partner and agency options')"
+          >
+            🤝 Partners
+          </div>
+          <div class="chip" onclick="quick('My internet is not working')">
+            📶 Fix Connectivity
+          </div>
+          <div class="chip" onclick="quick('How do I get a refund?')">
+            💳 Billing
+          </div>
+          <div class="chip" onclick="quick('I need support')">🎧 Help</div>
+        </div>
+      </div>
+
+      <!-- INPUT -->
+      <div class="input-area">
+        <div class="input-row">
+          <button class="ibtn" id="micBtn" title="Tap to speak">🎤</button>
+          <textarea
+            class="txt"
+            id="txt"
+            placeholder="Hey! Ask me anything about Zoiko Orbit..."
+            rows="1"
+          ></textarea>
+          <button class="send" id="sendBtn" title="Send">➤</button>
+        </div>
+        <div class="char-count" id="charCount"></div>
+        <div class="hint">
+          <kbd>Enter</kbd> send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> new line
+        </div>
+      </div>
+    </div>
+    <script>
+      // ══════════════════════════════════════════════
+      //  🔑  API KEY — replace with your key
+      // ══════════════════════════════════════════════
+      const API_KEY = "YOUR_API_KEY_HERE";
+
+      // ══════════════════════════════════════════════
+      //  LOGO (base64 embedded)
+      // ══════════════════════════════════════════════
+      const LOGO =
+        "data:image/png;base64,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";
+
+      // ══════════════════════════════════════════════
+      //  BACKEND
+      // ══════════════════════════════════════════════
+      const BACKEND =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+          ? "http://localhost:8080"
+          : "https://zoikon-722985113446.europe-west1.run.app";
+
+      // ══════════════════════════════════════════════
+      //  SYSTEM PROMPT — 100% Zoiko Orbit only
+      // ══════════════════════════════════════════════
+      const SYSTEM = `You are Zoikon, Zoiko Orbit's friendly AI support assistant. You are warm, helpful, knowledgeable, and never robotic. You specialise in global travel eSIM connectivity for personal travelers, enterprise clients, and travel ecosystem partners.
+
+CRITICAL RULES — NEVER VIOLATE:
+1. ONLY answer questions about Zoiko Orbit. Never reference any other telecom company.
+2. NEVER invent prices, plan names, or features not confirmed by tools or this prompt.
+3. ALWAYS provide clickable URLs for every actionable step.
+4. NEVER hallucinate. If unsure, say "Let me connect you with our support team."
+5. Ask clarifying questions before giving generic answers.
+6. Keep responses concise — use bullet points or numbered steps, never walls of text.
+
+ZOIKO ORBIT — COMPANY OVERVIEW:
+- Global travel eSIM connectivity provider
+- Website: https://zoikoorbit.com/
+- About: https://zoikoorbit.com/about-us/
+- Support: https://zoikoorbit.com/support/
+- Email: support@zoikoorbit.com
+
+TARGET USER SEGMENTS:
+1. Personal Travelers — eSIM activation, plan selection, connectivity issues, refunds & billing
+2. Enterprise Clients — bulk SIM deployment, account management, API integration
+3. Travel Partners / Agencies — white-label solutions, API docs, revenue & commissions
+
+KEY PAGES:
+- Homepage:    https://zoikoorbit.com/
+- About Us:    https://zoikoorbit.com/about-us/
+- Travelers:   https://zoikoorbit.com/personal-travelers/
+- Enterprises: https://zoikoorbit.com/enterprises/
+- Partners:    https://zoikoorbit.com/travel-ecosystem-partner/
+- Plans:       https://zoikoorbit.com/plans/
+- Impact:      https://zoikoorbit.com/our-impact/
+- Support:     https://zoikoorbit.com/support/
+
+GUIDED CONVERSATION FLOWS:
+
+eSIM ACTIVATION (ask device type first):
+→ iPhone: Settings → Cellular → Add eSIM → Scan QR code from order email → Enable Data Roaming → Restart
+→ Android: Settings → Network → SIM → Add eSIM → Scan QR code → Enable Data Roaming → Set as default → Restart
+→ Always end with: "Is it working now? 😊"
+
+NO INTERNET ISSUE:
+1. Is Mobile Data ON? → Settings → Mobile Data → ON
+2. Is Data Roaming ON? → Settings → Cellular → your plan → Data Roaming ON
+3. Is APN correct? → Contact support for APN settings
+4. Try: Toggle Airplane Mode → Restart device → Reinstall eSIM
+5. Still not resolved? → Escalate to support: https://zoikoorbit.com/support/
+
+PLAN RECOMMENDATION:
+1. Ask: "Which country are you travelling to?"
+2. Ask: "How many days will you be there?"
+3. Ask: "How much data do you typically use per day — light, moderate, or heavy?"
+4. Recommend best matching plan from https://zoikoorbit.com/plans/
+
+REFUND REQUEST:
+1. Ask reason: unused plan / technical issue / wrong plan / other
+2. Unused plan → eligible for full refund within 30 days
+3. Technical issue → eligible after team verification (3–5 business days)
+4. Wrong plan → reviewed case by case
+5. Direct to: https://zoikoorbit.com/support/
+
+BILLING QUESTION:
+→ Ask: "Are you looking for: 1) An invoice  2) A charge you don't recognise  3) A payment issue  4) A refund?"
+→ For all billing: https://zoikoorbit.com/support/
+
+ENTERPRISE QUERY:
+→ Bulk SIM deployment, corporate account management, API integration
+→ Direct to: https://zoikoorbit.com/enterprises/
+
+PARTNER QUERY:
+→ White-label solutions, API documentation, revenue & commissions
+→ Direct to: https://zoikoorbit.com/travel-ecosystem-partner/
+
+ESCALATION — escalate to human when:
+- Payment disputes unresolved
+- Technical issue not fixed after troubleshooting
+- Enterprise-level queries needing custom pricing
+- User frustration detected
+→ Always direct to: https://zoikoorbit.com/support/
+
+TROUBLESHOOTING QUICK REFERENCE:
+| Issue               | Solution                          |
+| No signal           | Restart device, check roaming     |
+| eSIM not installing | Check device compatibility        |
+| Slow speed          | Switch network mode (5G/4G auto)  |
+| No data             | Enable Data Roaming               |
+
+MULTILINGUAL: Support English (primary), Spanish, French, Arabic, Hindi.
+
+RESPONSE FORMAT:
+- Address user directly ("you", "your")
+- Every response: actionable step + relevant link
+- Bullet points or numbered steps — never paragraphs of text
+- End resolved queries with: "Is there anything else I can help you with today? 😊"
+`;
+
+      // ══════════════════════════════════════════════
+      //  TOOLS — Zoiko Orbit only
+      // ══════════════════════════════════════════════
+      const TOOLS = [
+        {
+          name: "get_esim_plan",
+          description:
+            "Get eSIM plan details for a destination. Use when user asks about plans, pricing, or which plan to choose.",
+          input_schema: {
+            type: "object",
+            properties: {
+              destination: {
+                type: "string",
+                description:
+                  "Country or region e.g. 'Japan', 'Europe', 'USA', 'Global'",
+              },
+              duration: {
+                type: "string",
+                description: "Trip length e.g. '7 days', '1 month'",
+              },
+              data_needs: {
+                type: "string",
+                enum: ["light", "moderate", "heavy"],
+                description: "Data usage level",
+              },
+            },
+            required: ["destination"],
+          },
+        },
+        {
+          name: "check_device_compatibility",
+          description:
+            "Check if a device supports eSIM. Use when user mentions a device model or asks about compatibility.",
+          input_schema: {
+            type: "object",
+            properties: {
+              device: {
+                type: "string",
+                description:
+                  "Device model e.g. 'iPhone 15 Pro', 'Samsung Galaxy S24'",
+              },
+            },
+            required: ["device"],
+          },
+        },
+        {
+          name: "get_activation_guide",
+          description:
+            "Get step-by-step eSIM activation instructions for a device type.",
+          input_schema: {
+            type: "object",
+            properties: {
+              device_type: {
+                type: "string",
+                enum: ["iPhone", "Android", "other"],
+              },
+            },
+            required: ["device_type"],
+          },
+        },
+        {
+          name: "troubleshoot_connectivity",
+          description:
+            "Diagnose and fix eSIM connectivity issues. Use when user reports no signal, slow speed, or no data.",
+          input_schema: {
+            type: "object",
+            properties: {
+              issue: {
+                type: "string",
+                enum: [
+                  "no_signal",
+                  "slow_speed",
+                  "no_data",
+                  "esim_not_installing",
+                  "roaming_off",
+                ],
+              },
+            },
+            required: ["issue"],
+          },
+        },
+        {
+          name: "check_coverage",
+          description: "Check eSIM coverage for a specific country or region.",
+          input_schema: {
+            type: "object",
+            properties: {
+              country: {
+                type: "string",
+                description: "Country name e.g. 'Japan', 'UK', 'Brazil'",
+              },
+            },
+            required: ["country"],
+          },
+        },
+        {
+          name: "handle_refund",
+          description:
+            "Process or guide a refund request. Use when user asks about refunds or cancellations.",
+          input_schema: {
+            type: "object",
+            properties: {
+              reason: {
+                type: "string",
+                enum: ["unused_plan", "technical_issue", "wrong_plan", "other"],
+              },
+            },
+            required: ["reason"],
+          },
+        },
+        {
+          name: "enterprise_info",
+          description:
+            "Provide enterprise eSIM solution details. Use for bulk SIM, corporate, or API integration queries.",
+          input_schema: {
+            type: "object",
+            properties: {
+              query_type: {
+                type: "string",
+                enum: [
+                  "bulk_sim",
+                  "account_management",
+                  "api_integration",
+                  "pricing",
+                ],
+              },
+            },
+            required: ["query_type"],
+          },
+        },
+        {
+          name: "partner_info",
+          description:
+            "Provide partner/agency program details. Use for white-label, affiliate, or API partnership queries.",
+          input_schema: {
+            type: "object",
+            properties: {
+              partner_type: {
+                type: "string",
+                enum: [
+                  "travel_agency",
+                  "white_label",
+                  "api_partner",
+                  "affiliate",
+                ],
+              },
+            },
+            required: ["partner_type"],
+          },
+        },
+        {
+          name: "create_support_ticket",
+          description:
+            "Create a support ticket. Use when user needs human agent help. Collect name, email, issue first.",
+          input_schema: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              email: { type: "string" },
+              issue: { type: "string" },
+              priority: { type: "string", enum: ["normal", "urgent"] },
+            },
+            required: ["name", "email", "issue"],
+          },
+        },
+        {
+          name: "compare_plans",
+          description:
+            "Compare two eSIM plans side by side. Use when user asks to compare plans.",
+          input_schema: {
+            type: "object",
+            properties: {
+              plan_a: { type: "string", description: "First destination/plan" },
+              plan_b: {
+                type: "string",
+                description: "Second destination/plan",
+              },
+            },
+            required: ["plan_a", "plan_b"],
+          },
+        },
+      ];
+
+      // ══════════════════════════════════════════════
+      //  TOOL EXECUTORS — Zoiko Orbit data only
+      // ══════════════════════════════════════════════
+      function executeTool(name, input) {
+        switch (name) {
+          case "get_esim_plan": {
+            const dest = (input.destination || "").toLowerCase();
+            const plans = {
+              usa: {
+                name: "USA eSIM",
+                data: "10GB high-speed + unlimited",
+                duration: "30 days",
+                price: "From $29.99",
+                networks: "Major US carriers",
+              },
+              europe: {
+                name: "Europe eSIM",
+                data: "15GB high-speed + unlimited",
+                duration: "15 days",
+                price: "From $34.99",
+                networks: "30+ European carriers",
+              },
+              japan: {
+                name: "Japan eSIM",
+                data: "10GB high-speed",
+                duration: "15 days",
+                price: "From $24.99",
+                networks: "NTT Docomo, SoftBank",
+              },
+              uk: {
+                name: "UK eSIM",
+                data: "15GB high-speed + unlimited",
+                duration: "30 days",
+                price: "From $24.99",
+                networks: "EE, Vodafone, O2",
+              },
+              asia: {
+                name: "Asia eSIM",
+                data: "10GB high-speed",
+                duration: "15 days",
+                price: "From $29.99",
+                networks: "Multi-network, 15+ countries",
+              },
+              global: {
+                name: "Global eSIM",
+                data: "20GB high-speed + unlimited",
+                duration: "30 days",
+                price: "From $59.99",
+                networks: "200+ countries",
+              },
+              india: {
+                name: "India eSIM",
+                data: "10GB high-speed",
+                duration: "30 days",
+                price: "From $19.99",
+                networks: "Airtel, Jio, Vi",
+              },
+              canada: {
+                name: "Canada eSIM",
+                data: "15GB high-speed + unlimited",
+                duration: "30 days",
+                price: "From $24.99",
+                networks: "Rogers, Bell, Telus",
+              },
+              australia: {
+                name: "Australia eSIM",
+                data: "10GB high-speed",
+                duration: "30 days",
+                price: "From $24.99",
+                networks: "Telstra, Optus",
+              },
+              uae: {
+                name: "UAE eSIM",
+                data: "10GB high-speed",
+                duration: "15 days",
+                price: "From $22.99",
+                networks: "Etisalat, du",
+              },
+            };
+            const key =
+              Object.keys(plans).find((k) => dest.includes(k)) || "global";
+            return {
+              success: true,
+              plan: plans[key],
+              plans_url: "https://zoikoorbit.com/plans/",
+              support_url: "https://zoikoorbit.com/support/",
+              note: "Visit https://zoikoorbit.com/plans/ for full pricing and available destinations.",
+            };
+          }
+
+          case "check_device_compatibility": {
+            const d = (input.device || "").toLowerCase();
+            const esimDevices = [
+              "iphone xs",
+              "iphone xr",
+              "iphone 11",
+              "iphone 12",
+              "iphone 13",
+              "iphone 14",
+              "iphone 15",
+              "samsung galaxy s20",
+              "samsung galaxy s21",
+              "samsung galaxy s22",
+              "samsung galaxy s23",
+              "samsung galaxy s24",
+              "pixel 3",
+              "pixel 4",
+              "pixel 5",
+              "pixel 6",
+              "pixel 7",
+              "pixel 8",
+              "galaxy z fold",
+              "galaxy z flip",
+            ];
+            const hasESIM = esimDevices.some(
+              (m) =>
+                d.includes(m.replace("samsung ", "").replace("iphone ", "")) ||
+                d.includes(m),
+            );
+            const isKnown = [
+              "iphone",
+              "samsung",
+              "galaxy",
+              "pixel",
+              "oneplus",
+              "oppo",
+              "sony",
+              "xiaomi",
+              "motorola",
+            ].some((b) => d.includes(b));
+            return {
+              success: true,
+              device: input.device,
+              esim_compatible: hasESIM || isKnown,
+              esim_supported: hasESIM,
+              message: hasESIM
+                ? `${input.device} supports eSIM — you can activate your Zoiko Orbit plan instantly, no physical SIM needed!`
+                : isKnown
+                  ? `${input.device} may support eSIM depending on the variant and region. Please check: Settings → About → Available SIM (iPhone) or Settings → Network → SIM Management (Android).`
+                  : `Please verify your device supports eSIM before purchasing. Contact us at https://zoikoorbit.com/support/ for help.`,
+              plans_url: "https://zoikoorbit.com/plans/",
+            };
+          }
+
+          case "get_activation_guide": {
+            const steps = {
+              iPhone: [
+                "Open Settings → Cellular (or Mobile Data)",
+                'Tap "Add eSIM" or "Add Cellular Plan"',
+                "Scan the QR code from your Zoiko Orbit order confirmation email",
+                "Follow on-screen prompts — takes about 2 minutes",
+                "Enable Data Roaming: Settings → Cellular → Zoiko Orbit plan → Data Roaming ON",
+                "Set as your primary data line if needed",
+                "Restart your device to finalise",
+              ],
+              Android: [
+                "Open Settings → Network & Internet (or Connections)",
+                'Tap SIM Cards → Add eSIM (or "Download SIM")',
+                "Scan the QR code from your Zoiko Orbit order confirmation email",
+                "Follow on-screen prompts — takes about 2 minutes",
+                "Enable Data Roaming in your SIM settings",
+                "Set Zoiko Orbit as your default for Mobile Data",
+                "Restart your device to finalise",
+              ],
+              other: [
+                "Check your device manual for eSIM installation steps",
+                "Scan the QR code from your Zoiko Orbit order confirmation email",
+                "Enable Data Roaming once installed",
+                "Restart your device",
+                "Still need help? Contact us: https://zoikoorbit.com/support/",
+              ],
+            };
+            return {
+              success: true,
+              device_type: input.device_type,
+              steps: steps[input.device_type] || steps.other,
+              support_url: "https://zoikoorbit.com/support/",
+              plans_url: "https://zoikoorbit.com/plans/",
+            };
+          }
+
+          case "troubleshoot_connectivity": {
+            const fixes = {
+              no_signal: [
+                "Toggle Airplane Mode ON for 10 seconds, then OFF",
+                "Restart your device fully",
+                "Verify your eSIM plan is still active",
+                "Ensure you are in a covered area — check https://zoikoorbit.com/plans/",
+                "Contact support: https://zoikoorbit.com/support/",
+              ],
+              slow_speed: [
+                "Go to Settings → Mobile Network → Preferred Network → select 5G/4G LTE Auto",
+                "Disable Data Roaming, wait 10 seconds, re-enable it",
+                "Move to an area with better signal coverage",
+                "Check if your high-speed data allowance is exhausted",
+                "Contact support: https://zoikoorbit.com/support/",
+              ],
+              no_data: [
+                "Check Mobile Data is ON: Settings → Mobile Data → toggle ON",
+                "Enable Data Roaming: Settings → Cellular → your Zoiko Orbit plan → Data Roaming ON",
+                "Verify your eSIM plan is active and not expired",
+                "Check APN settings — contact support for correct APN: https://zoikoorbit.com/support/",
+              ],
+              esim_not_installing: [
+                "Ensure your device supports eSIM (see compatibility check)",
+                "Confirm the QR code has not already been used — each QR is single-use",
+                "Ensure you have a stable Wi-Fi connection during installation",
+                "Restart your device and try again",
+                "Contact support for a fresh QR code: https://zoikoorbit.com/support/",
+              ],
+              roaming_off: [
+                "iPhone: Settings → Cellular → tap your Zoiko Orbit plan → enable Data Roaming",
+                "Android: Settings → Connections → Mobile Networks → enable Data Roaming",
+                "Restart your device after enabling roaming",
+                "If issue persists: https://zoikoorbit.com/support/",
+              ],
+            };
+            return {
+              success: true,
+              issue: input.issue,
+              steps: fixes[input.issue] || fixes.no_data,
+              support_url: "https://zoikoorbit.com/support/",
+            };
+          }
+
+          case "check_coverage": {
+            return {
+              success: true,
+              country: input.country,
+              covered: true,
+              quality: "Excellent",
+              note: `Zoiko Orbit eSIMs are available in ${input.country} through our local carrier partnerships. Visit https://zoikoorbit.com/plans/ to see available plans for your destination.`,
+              plans_url: "https://zoikoorbit.com/plans/",
+            };
+          }
+
+          case "handle_refund": {
+            const policy = {
+              unused_plan: {
+                eligible: true,
+                timeline: "5–7 business days",
+                note: "Unused plans are eligible for a full refund within 30 days of purchase.",
+              },
+              technical_issue: {
+                eligible: true,
+                timeline: "3–5 business days",
+                note: "Technical issues are fully covered. Our team will verify and process your refund.",
+              },
+              wrong_plan: {
+                eligible: true,
+                timeline: "5–7 business days",
+                note: "Wrong plan purchases are reviewed case by case. Contact our support team.",
+              },
+              other: {
+                eligible: null,
+                timeline: "Under review",
+                note: "Please contact our support team for a full assessment of your refund request.",
+              },
+            };
+            const p = policy[input.reason] || policy.other;
+            return {
+              success: true,
+              ...p,
+              support_url: "https://zoikoorbit.com/support/",
+            };
+          }
+
+          case "enterprise_info": {
+            return {
+              success: true,
+              query_type: input.query_type,
+              message:
+                "Zoiko Orbit offers enterprise-grade eSIM solutions for businesses of all sizes.",
+              offerings: [
+                "Bulk eSIM deployment across your entire workforce",
+                "Centralised account management dashboard",
+                "Full REST API for automated SIM provisioning",
+                "Volume pricing discounts (50+ devices)",
+                "Dedicated account manager & priority support",
+              ],
+              enterprise_url: "https://zoikoorbit.com/enterprises/",
+              support_url: "https://zoikoorbit.com/support/",
+            };
+          }
+
+          case "partner_info": {
+            return {
+              success: true,
+              partner_type: input.partner_type,
+              message:
+                "Join the Zoiko Orbit Travel Ecosystem Partner programme.",
+              offerings: [
+                "White-label eSIM solutions — rebrand as your own",
+                "Full API access for seamless eSIM integration",
+                "Competitive revenue sharing on every sale",
+                "Co-branded marketing materials & tools",
+                "Dedicated partner account manager",
+              ],
+              partner_url: "https://zoikoorbit.com/travel-ecosystem-partner/",
+              support_url: "https://zoikoorbit.com/support/",
+            };
+          }
+
+          case "create_support_ticket": {
+            const ref = "ZKO-" + Date.now().toString().slice(-6);
+            setTimeout(
+              () =>
+                addEscalateWithData(input.name, input.email, input.issue, ref),
+              400,
+            );
+            return {
+              success: true,
+              ticket_id: ref,
+              response_time:
+                input.priority === "urgent"
+                  ? "Within 1 hour"
+                  : "Within 24 hours",
+              support_url: "https://zoikoorbit.com/support/",
+              message: `Support ticket created! Reference: ${ref}. Our team will contact ${input.email} ${input.priority === "urgent" ? "within 1 hour" : "within 24 hours"}.`,
+            };
+          }
+
+          case "compare_plans": {
+            return {
+              success: true,
+              note: `For a full side-by-side plan comparison, visit https://zoikoorbit.com/plans/`,
+              plan_a: input.plan_a,
+              plan_b: input.plan_b,
+              plans_url: "https://zoikoorbit.com/plans/",
+            };
+          }
+
+          default:
+            return { success: false, error: "Unknown tool: " + name };
+        }
+      }
+
+      // ══════════════════════════════════════════════
+      //  TOOL LOADING LABELS
+      // ══════════════════════════════════════════════
+      const TOOL_LABELS = {
+        get_esim_plan: [
+          "🔍 Finding the best eSIM plan...",
+          "📋 Loading plan details...",
+        ],
+        check_device_compatibility: [
+          "📱 Checking device compatibility...",
+          "🔎 Running eSIM check...",
+        ],
+        get_activation_guide: [
+          "📲 Preparing activation steps...",
+          "⚡ Loading your guide...",
+        ],
+        troubleshoot_connectivity: [
+          "🔧 Diagnosing the issue...",
+          "📡 Running troubleshoot...",
+        ],
+        check_coverage: [
+          "🌍 Checking coverage...",
+          "📡 Loading network info...",
+        ],
+        handle_refund: [
+          "💳 Checking refund eligibility...",
+          "📄 Loading refund policy...",
+        ],
+        enterprise_info: [
+          "🏢 Loading enterprise options...",
+          "⚙️ Preparing business info...",
+        ],
+        partner_info: [
+          "🤝 Loading partner details...",
+          "🌐 Preparing partner info...",
+        ],
+        create_support_ticket: [
+          "📞 Creating your support ticket...",
+          "🎧 Connecting you with our team...",
+        ],
+        compare_plans: [
+          "⚖️ Comparing plans...",
+          "📊 Running plan comparison...",
+        ],
+      };
+
+      // ══════════════════════════════════════════════
+      //  STATE
+      // ══════════════════════════════════════════════
+      let chatMsgs = [],
+        typing = false,
+        autoSpeak = false,
+        listening = false,
+        recognition = null,
+        sessionStart = Date.now(),
+        msgCount = 0;
+
+      const msgs = document.getElementById("msgs");
+      const txt = document.getElementById("txt");
+      const sendBtn = document.getElementById("sendBtn");
+      const micBtn = document.getElementById("micBtn");
+      const muteBtn = document.getElementById("muteBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const histBtn = document.getElementById("histBtn");
+      const vbarWrap = document.getElementById("vbarWrap");
+      const vlabel = document.getElementById("vlabel");
+      const charCount = document.getElementById("charCount");
+      const toolBar = document.getElementById("toolBar");
+      const toolLabel = document.getElementById("toolLabel");
+
+      setInterval(() => {
+        const el = document.getElementById("sessionTime");
+        if (el)
+          el.textContent =
+            "Session: " + Math.floor((Date.now() - sessionStart) / 60000) + "m";
+      }, 30000);
+
+      txt.addEventListener("input", () => {
+        txt.style.height = "auto";
+        txt.style.height = Math.min(txt.scrollHeight, 90) + "px";
+        const l = txt.value.length;
+        charCount.textContent = l > 0 ? l + " / 500" : "";
+        charCount.className =
+          "char-count" + (l > 450 ? " over" : l > 350 ? " warn" : "");
+      });
+      txt.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          send();
+        }
+      });
+      sendBtn.addEventListener("click", send);
+
+      function quick(t) {
+        txt.value = t;
+        send();
+      }
+      function showToolBar(l) {
+        toolLabel.textContent = l;
+        toolBar.classList.add("on");
+      }
+      function hideToolBar() {
+        toolBar.classList.remove("on");
+      }
+
+      // ══════════════════════════════════════════════
+      //  SMART REPLY — Zoiko Orbit only
+      // ══════════════════════════════════════════════
+      function smartReply(text) {
+        const t = text.toLowerCase().trim();
+
+        // GREETINGS
+        if (
+          /^(hi+|hello+|hey+|howdy|hiya|sup|yo+|greetings|good\s+(morning|afternoon|evening)|hi\s+there|hey\s+there|hello\s+there)[\s!.?]*$/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "Hey there! 👋 Welcome to **Zoiko Orbit**! I'm **Zoikon** — your 24/7 global travel eSIM assistant.\n\nI can help with **eSIM plans**, **activation**, **connectivity issues**, **enterprise solutions**, **partner programmes**, and much more.\n\nWhat can I help you with today?",
+            cards: [
+              makeMenuCards([
+                {
+                  ico: "📱",
+                  title: "Browse eSIM Plans",
+                  sub: "200+ countries · Instant activation",
+                  action: "Show me available eSIM plans",
+                },
+                {
+                  ico: "🔌",
+                  title: "Activate My eSIM",
+                  sub: "Step-by-step for iPhone & Android",
+                  action: "How do I activate my eSIM?",
+                },
+                {
+                  ico: "🌍",
+                  title: "Find a Travel Plan",
+                  sub: "Tell me your destination & I'll recommend",
+                  action: "Which plan is best for my trip?",
+                },
+                {
+                  ico: "📶",
+                  title: "Fix Connectivity Issue",
+                  sub: "No signal, slow data, roaming problems",
+                  action: "My internet is not working",
+                },
+                {
+                  ico: "🏢",
+                  title: "Enterprise Solutions",
+                  sub: "Bulk SIM, API integration, corporate accounts",
+                  action: "Tell me about enterprise eSIM options",
+                },
+                {
+                  ico: "🤝",
+                  title: "Become a Partner",
+                  sub: "White-label, agencies, API partners",
+                  action: "Tell me about the partner programme",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // ABOUT ZOIKO ORBIT
+        if (
+          /about\s*(zoiko|orbit|company|us|you)|what\s*is\s*zoiko|who\s*are\s*you|tell\s*me\s*about\s*zoiko/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "**Zoiko Orbit** is a global travel eSIM connectivity provider! 🌍\n\nWe help **personal travelers**, **enterprise clients**, and **travel ecosystem partners** stay connected in 200+ countries — all with instant eSIM activation, no physical SIM card needed.",
+            cards: [
+              makeInfoCard("🌍", "Zoiko Orbit", [
+                {
+                  label: "What we do",
+                  val: "Global travel eSIM connectivity",
+                  org: true,
+                },
+                {
+                  label: "Coverage",
+                  val: "200+ countries worldwide",
+                  org: true,
+                },
+                {
+                  label: "Activation",
+                  val: "Instant — scan QR code, done in minutes",
+                  org: true,
+                },
+                {
+                  label: "Users",
+                  val: "Personal travelers, enterprises & travel partners",
+                  org: true,
+                },
+                {
+                  label: "Support",
+                  val: "24/7 AI + human escalation",
+                  org: true,
+                },
+                { label: "Website", val: "zoikoorbit.com", org: true },
+              ]),
+              makeLinksBar([
+                { url: "https://zoikoorbit.com/about-us/", label: "About Us" },
+                {
+                  url: "https://zoikoorbit.com/our-impact/",
+                  label: "Our Impact",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "📱 Browse Plans",
+                  action: "Show me available eSIM plans",
+                  type: "primary",
+                },
+                {
+                  label: "🏢 Enterprise",
+                  action: "Tell me about enterprise eSIM options",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // eSIM PLANS
+        if (
+          /show.*plan|browse.*plan|all.*plan|available.*plan|esim.*plan|plan.*list|what.*plan|our.*plan|see.*plan|view.*plan/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "Here's an overview of Zoiko Orbit's eSIM plans! 📱 We cover **200+ countries** with flexible durations and data options.",
+            cards: [
+              makeInfoCard("📱", "eSIM Plans Overview", [
+                {
+                  label: "🇺🇸 USA",
+                  val: "From $29.99 · 10GB · 30 days",
+                  org: true,
+                },
+                {
+                  label: "🇪🇺 Europe",
+                  val: "From $34.99 · 15GB · 15 days",
+                  org: true,
+                },
+                {
+                  label: "🇯🇵 Japan",
+                  val: "From $24.99 · 10GB · 15 days",
+                  org: true,
+                },
+                {
+                  label: "🇬🇧 UK",
+                  val: "From $24.99 · 15GB · 30 days",
+                  org: true,
+                },
+                {
+                  label: "🇮🇳 India",
+                  val: "From $19.99 · 10GB · 30 days",
+                  org: true,
+                },
+                {
+                  label: "🌍 Global",
+                  val: "From $59.99 · 20GB · 30 days",
+                  org: true,
+                },
+                {
+                  label: "Activation",
+                  val: "Instant QR code — no physical SIM",
+                  org: true,
+                },
+                {
+                  label: "More options",
+                  val: "200+ countries available",
+                  org: true,
+                },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/plans/",
+                  label: "View All Plans & Pricing",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🌍 Find My Plan",
+                  action: "Which plan is best for my trip?",
+                  type: "primary",
+                },
+                {
+                  label: "🔌 Activate eSIM",
+                  action: "How do I activate my eSIM?",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // PLAN RECOMMENDATION
+        if (
+          /which.*plan|best.*plan|recommend.*plan|what.*plan.*trip|plan.*for.*trip|plan.*for.*travel|what.*should.*get/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "I'd love to find you the perfect plan! 🌍 Let me ask a few quick questions:\n\n**1. Which country are you travelling to?**\n\nJust type your destination and I'll recommend the best plan for you!",
+            cards: [
+              makeActionBar([
+                {
+                  label: "🇺🇸 USA",
+                  action: "Which plan is best for USA?",
+                  type: "primary",
+                },
+                {
+                  label: "🇪🇺 Europe",
+                  action: "Which plan is best for Europe?",
+                },
+                { label: "🇯🇵 Japan", action: "Which plan is best for Japan?" },
+                {
+                  label: "🌍 Global",
+                  action: "Tell me about the global eSIM plan",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // DESTINATION-SPECIFIC PLANS
+        if (
+          /usa|united states|america/i.test(t) &&
+          /plan|esim|data|trip|travel/i.test(t)
+        ) {
+          return {
+            text: "The **USA eSIM** is perfect for your trip! 🇺🇸",
+            cards: [
+              makeInfoCard("🇺🇸", "USA eSIM Plan", [
+                {
+                  label: "Data",
+                  val: "10GB high-speed + unlimited",
+                  org: true,
+                },
+                { label: "Duration", val: "30 days", org: true },
+                { label: "Price", val: "From $29.99", org: true },
+                { label: "Networks", val: "Major US carriers", org: true },
+                { label: "Activation", val: "Instant QR code", org: true },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/plans/",
+                  label: "Get USA eSIM Plan",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🔌 How to Activate",
+                  action: "How do I activate my eSIM?",
+                  type: "primary",
+                },
+                {
+                  label: "📱 More Plans",
+                  action: "Show me available eSIM plans",
+                },
+              ]),
+            ],
+          };
+        }
+
+        if (
+          /europe|european/i.test(t) &&
+          /plan|esim|data|trip|travel/i.test(t)
+        ) {
+          return {
+            text: "The **Europe eSIM** covers 30+ countries — perfect for European travel! 🇪🇺",
+            cards: [
+              makeInfoCard("🇪🇺", "Europe eSIM Plan", [
+                {
+                  label: "Data",
+                  val: "15GB high-speed + unlimited",
+                  org: true,
+                },
+                { label: "Duration", val: "15 days", org: true },
+                { label: "Price", val: "From $34.99", org: true },
+                { label: "Coverage", val: "30+ European countries", org: true },
+                {
+                  label: "Networks",
+                  val: "Multi-network across Europe",
+                  org: true,
+                },
+                { label: "Activation", val: "Instant QR code", org: true },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/plans/",
+                  label: "Get Europe eSIM Plan",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🔌 How to Activate",
+                  action: "How do I activate my eSIM?",
+                  type: "primary",
+                },
+                {
+                  label: "📱 More Plans",
+                  action: "Show me available eSIM plans",
+                },
+              ]),
+            ],
+          };
+        }
+
+        if (/japan/i.test(t) && /plan|esim|data|trip|travel/i.test(t)) {
+          return {
+            text: "The **Japan eSIM** gives you reliable coverage across Japan! 🇯🇵",
+            cards: [
+              makeInfoCard("🇯🇵", "Japan eSIM Plan", [
+                { label: "Data", val: "10GB high-speed", org: true },
+                { label: "Duration", val: "15 days", org: true },
+                { label: "Price", val: "From $24.99", org: true },
+                { label: "Networks", val: "NTT Docomo, SoftBank", org: true },
+                { label: "Activation", val: "Instant QR code", org: true },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/plans/",
+                  label: "Get Japan eSIM Plan",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🔌 How to Activate",
+                  action: "How do I activate my eSIM?",
+                  type: "primary",
+                },
+                {
+                  label: "📱 More Plans",
+                  action: "Show me available eSIM plans",
+                },
+              ]),
+            ],
+          };
+        }
+
+        if (
+          /global|worldwide|multiple.*countr|many.*countr/i.test(t) &&
+          /plan|esim|data|trip|travel/i.test(t)
+        ) {
+          return {
+            text: "The **Global eSIM** is our best option for multi-country travel! 🌍",
+            cards: [
+              makeInfoCard("🌍", "Global eSIM Plan", [
+                {
+                  label: "Data",
+                  val: "20GB high-speed + unlimited",
+                  org: true,
+                },
+                { label: "Duration", val: "30 days", org: true },
+                { label: "Price", val: "From $59.99", org: true },
+                {
+                  label: "Coverage",
+                  val: "200+ countries worldwide",
+                  org: true,
+                },
+                { label: "Activation", val: "Instant QR code", org: true },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/plans/",
+                  label: "Get Global eSIM Plan",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🔌 How to Activate",
+                  action: "How do I activate my eSIM?",
+                  type: "primary",
+                },
+                {
+                  label: "📱 All Plans",
+                  action: "Show me available eSIM plans",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // eSIM ACTIVATION
+        if (
+          /activate|activation|install.*esim|set.*up.*esim|how.*esim.*work|scan.*qr|qr.*code/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "Let me walk you through eSIM activation! 📲 Which device are you using?",
+            cards: [
+              makeMenuCards([
+                {
+                  ico: "🍎",
+                  title: "iPhone",
+                  sub: "iOS 13 and above",
+                  action: "How do I activate eSIM on iPhone?",
+                },
+                {
+                  ico: "🤖",
+                  title: "Android",
+                  sub: "Android 9 and above",
+                  action: "How do I activate eSIM on Android?",
+                },
+                {
+                  ico: "❓",
+                  title: "Not sure / Other",
+                  sub: "Let me check your device",
+                  action: "Is my device compatible with Zoiko Orbit?",
+                },
+              ]),
+            ],
+          };
+        }
+
+        if (
+          /iphone.*esim|esim.*iphone|activate.*iphone|iphone.*activate/i.test(t)
+        ) {
+          return {
+            text: "Here's how to activate your Zoiko Orbit eSIM on **iPhone**! 🍎",
+            cards: [
+              makeStepCard("eSIM ACTIVATION — iPHONE", [
+                { label: "Open Settings → Cellular (or Mobile Data)", sub: "" },
+                { label: 'Tap "Add eSIM" or "Add Cellular Plan"', sub: "" },
+                {
+                  label: "Scan the QR code from your order email",
+                  sub: "Check spam folder if not found",
+                },
+                { label: "Follow on-screen prompts (~2 minutes)", sub: "" },
+                {
+                  label: "Enable Data Roaming",
+                  sub: "Settings → Cellular → Zoiko Orbit → Data Roaming ON",
+                },
+                { label: "Restart your device to finalise", sub: "" },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/support/",
+                  label: "Need Help? Contact Support",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "📶 Still not working?",
+                  action: "My internet is not working",
+                  type: "primary",
+                },
+                {
+                  label: "📱 Browse Plans",
+                  action: "Show me available eSIM plans",
+                },
+              ]),
+            ],
+          };
+        }
+
+        if (
+          /android.*esim|esim.*android|activate.*android|android.*activate/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "Here's how to activate your Zoiko Orbit eSIM on **Android**! 🤖",
+            cards: [
+              makeStepCard("eSIM ACTIVATION — ANDROID", [
+                {
+                  label: "Open Settings → Network & Internet (or Connections)",
+                  sub: "",
+                },
+                {
+                  label: 'Tap SIM Cards → Add eSIM (or "Download SIM")',
+                  sub: "",
+                },
+                {
+                  label: "Scan the QR code from your order email",
+                  sub: "Check spam folder if not found",
+                },
+                { label: "Follow on-screen prompts (~2 minutes)", sub: "" },
+                { label: "Enable Data Roaming in SIM settings", sub: "" },
+                {
+                  label: "Set Zoiko Orbit as default for Mobile Data",
+                  sub: "",
+                },
+                { label: "Restart your device to finalise", sub: "" },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/support/",
+                  label: "Need Help? Contact Support",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "📶 Still not working?",
+                  action: "My internet is not working",
+                  type: "primary",
+                },
+                {
+                  label: "📱 Browse Plans",
+                  action: "Show me available eSIM plans",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // DEVICE COMPATIBILITY
+        if (
+          /compatible|compatibility|esim.*support|support.*esim|my.*device|my.*phone|does.*work|check.*device/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "Most modern smartphones support eSIM! 📱 Here's a quick guide:",
+            cards: [
+              makeInfoCard("📱", "eSIM Compatible Devices", [
+                {
+                  label: "iPhone",
+                  val: "iPhone XS and later (XS, XR, 11, 12, 13, 14, 15 series)",
+                  org: true,
+                },
+                {
+                  label: "Samsung",
+                  val: "Galaxy S20 series and later, Galaxy Z Fold/Flip",
+                  org: true,
+                },
+                { label: "Google Pixel", val: "Pixel 3 and later", org: true },
+                {
+                  label: "Other brands",
+                  val: "Most flagship Android devices from 2020 onwards",
+                  org: true,
+                },
+                {
+                  label: "Check on iPhone",
+                  val: "Settings → General → About → Available SIM",
+                  org: true,
+                },
+                {
+                  label: "Check on Android",
+                  val: "Settings → Network → SIM Management",
+                  org: true,
+                },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/support/",
+                  label: "Ask Our Support Team",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🔌 Activate eSIM",
+                  action: "How do I activate my eSIM?",
+                  type: "primary",
+                },
+                {
+                  label: "📱 Browse Plans",
+                  action: "Show me available eSIM plans",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // CONNECTIVITY TROUBLESHOOT
+        if (
+          /no\s*internet|not\s*working|no\s*signal|no\s*data|can.?t\s*connect|connection.*issue|internet.*issue|internet.*problem|data.*not.*work/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "Let's fix your connection! 🔧 Try these steps in order:",
+            cards: [
+              makeStepCard("CONNECTIVITY TROUBLESHOOT", [
+                {
+                  label: "Check Mobile Data is ON",
+                  sub: "Settings → Mobile Data / Cellular → toggle ON",
+                },
+                {
+                  label: "Enable Data Roaming",
+                  sub: "Settings → Cellular → Zoiko Orbit plan → Data Roaming ON",
+                },
+                {
+                  label: "Toggle Airplane Mode",
+                  sub: "Turn ON for 10 seconds, then OFF again",
+                },
+                {
+                  label: "Restart your device",
+                  sub: "Power off fully, then turn back on",
+                },
+                {
+                  label: "Check your plan is active",
+                  sub: "Log in to your Zoiko Orbit account",
+                },
+                {
+                  label: "Still not working?",
+                  sub: "Contact our 24/7 support team",
+                },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/support/",
+                  label: "Contact Support 24/7",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🔌 eSIM install issue?",
+                  action: "My eSIM is not installing",
+                },
+                {
+                  label: "🎧 Talk to an agent",
+                  action: "I need support",
+                  type: "primary",
+                },
+              ]),
+            ],
+          };
+        }
+
+        if (
+          /slow.*internet|slow.*data|slow.*speed|speed.*slow|data.*slow/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "Sorry to hear about the slow speeds — let's fix it! 📶",
+            cards: [
+              makeStepCard("FIX SLOW DATA SPEEDS", [
+                {
+                  label: "Switch network mode",
+                  sub: "Settings → Mobile Network → Preferred → 5G/4G LTE Auto",
+                },
+                {
+                  label: "Toggle Data Roaming off/on",
+                  sub: "Wait 10 seconds between each toggle",
+                },
+                {
+                  label: "Move to a better signal area",
+                  sub: "Avoid basements, elevators, rural areas",
+                },
+                {
+                  label: "Check your data allowance",
+                  sub: "High-speed data may be exhausted — check your plan",
+                },
+                { label: "Restart your device", sub: "" },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/support/",
+                  label: "Contact Support",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🎧 Talk to an agent",
+                  action: "I need support",
+                  type: "primary",
+                },
+                {
+                  label: "📱 Upgrade Plan",
+                  action: "Show me available eSIM plans",
+                },
+              ]),
+            ],
+          };
+        }
+
+        if (
+          /esim.*not.*install|install.*esim.*fail|can.?t.*install|esim.*install.*problem/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "Let's get your eSIM installed! Here's what to try: 📲",
+            cards: [
+              makeStepCard("FIX eSIM INSTALLATION", [
+                {
+                  label: "Verify device is eSIM-compatible",
+                  sub: "Check Settings → About → Available SIM",
+                },
+                {
+                  label: "Check QR code is not already used",
+                  sub: "Each QR code is single-use only",
+                },
+                {
+                  label: "Connect to stable Wi-Fi",
+                  sub: "Required during eSIM installation",
+                },
+                { label: "Restart device and try again", sub: "" },
+                {
+                  label: "Contact us for a fresh QR code",
+                  sub: "https://zoikoorbit.com/support/",
+                },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/support/",
+                  label: "Get a Fresh QR Code",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🎧 Talk to an agent",
+                  action: "I need support",
+                  type: "primary",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // COVERAGE
+        if (
+          /cover|coverage|which.*countr|country.*work|work.*country|200.*countr|how.*many.*countr|where.*work/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "Zoiko Orbit eSIMs work in **200+ countries** worldwide! 🌍",
+            cards: [
+              makeInfoCard("🌍", "Global Coverage", [
+                {
+                  label: "Europe",
+                  val: "30+ countries including UK, France, Germany, Italy, Spain",
+                  org: true,
+                },
+                {
+                  label: "Asia-Pacific",
+                  val: "Japan, South Korea, Australia, Singapore, India & more",
+                  org: true,
+                },
+                {
+                  label: "Americas",
+                  val: "USA, Canada, Mexico, Brazil, Colombia & more",
+                  org: true,
+                },
+                {
+                  label: "Middle East",
+                  val: "UAE, Saudi Arabia, Qatar, Jordan, Israel",
+                  org: true,
+                },
+                {
+                  label: "Africa",
+                  val: "South Africa, Egypt, Nigeria, Kenya & more",
+                  org: true,
+                },
+                {
+                  label: "Total",
+                  val: "200+ countries & territories worldwide",
+                  org: true,
+                },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/plans/",
+                  label: "Browse Plans by Destination",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🌍 Find My Plan",
+                  action: "Which plan is best for my trip?",
+                  type: "primary",
+                },
+                {
+                  label: "📱 Browse All Plans",
+                  action: "Show me available eSIM plans",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // BILLING
+        if (
+          /bill|billing|invoice|payment|charge|overcharg/i.test(t) &&
+          !/refund/i.test(t)
+        ) {
+          return {
+            text: "Happy to help with billing! 💳 What are you looking for?",
+            cards: [
+              makeMenuCards([
+                {
+                  ico: "📄",
+                  title: "View Invoice",
+                  sub: "Download your order receipt",
+                  action: "How do I view my invoice?",
+                },
+                {
+                  ico: "❓",
+                  title: "Charge I Don't Recognise",
+                  sub: "Dispute an unexpected charge",
+                  action: "I was charged incorrectly",
+                },
+                {
+                  ico: "💳",
+                  title: "Payment Issue",
+                  sub: "Failed payment or update card details",
+                  action: "I have a payment issue",
+                },
+                {
+                  ico: "💰",
+                  title: "Request a Refund",
+                  sub: "Unused plan or technical issue",
+                  action: "How do I get a refund?",
+                },
+              ]),
+            ],
+          };
+        }
+
+        if (/refund|money.*back|reimburse/i.test(t)) {
+          return {
+            text: "Here's how refunds work at Zoiko Orbit! 💰",
+            cards: [
+              makeStepCard("REFUND POLICY", [
+                {
+                  label: "Unused plan",
+                  sub: "Full refund within 30 days of purchase ✅",
+                },
+                {
+                  label: "Technical issue",
+                  sub: "Full refund after team verification (3–5 days) ✅",
+                },
+                {
+                  label: "Wrong plan",
+                  sub: "Reviewed case by case — contact support",
+                },
+                {
+                  label: "Processing time",
+                  sub: "3–7 business days once approved",
+                },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/support/",
+                  label: "Request a Refund",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🎧 Talk to an agent",
+                  action: "I need support",
+                  type: "primary",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // ENTERPRISE
+        if (
+          /enterprise|bulk.*sim|corporate|business.*sim|api.*integr|b2b|multiple.*device|fleet/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "Zoiko Orbit offers powerful **enterprise eSIM solutions** for businesses of all sizes! 🏢",
+            cards: [
+              makeInfoCard("🏢", "Enterprise eSIM Solutions", [
+                {
+                  label: "Bulk Deployment",
+                  val: "Deploy eSIMs across your entire workforce",
+                  org: true,
+                },
+                {
+                  label: "Account Dashboard",
+                  val: "Centralised management for all devices",
+                  org: true,
+                },
+                {
+                  label: "API Integration",
+                  val: "Full REST API for automated SIM provisioning",
+                  org: true,
+                },
+                {
+                  label: "Volume Pricing",
+                  val: "Discounts available for 50+ devices",
+                  org: true,
+                },
+                {
+                  label: "Dedicated Support",
+                  val: "Account manager + priority support",
+                  org: true,
+                },
+                {
+                  label: "Coverage",
+                  val: "200+ countries worldwide",
+                  org: true,
+                },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/enterprises/",
+                  label: "Enterprise Solutions",
+                },
+                {
+                  url: "https://zoikoorbit.com/support/",
+                  label: "Contact Business Team",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🏢 Enquire Now",
+                  action: "I need support",
+                  type: "primary",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // PARTNER
+        if (
+          /partner|agency|white.*label|resell|travel.*eco|ecosystem.*partner/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "Join the **Zoiko Orbit Travel Ecosystem Partner** programme! 🤝",
+            cards: [
+              makeInfoCard("🤝", "Travel Ecosystem Partner Programme", [
+                {
+                  label: "White-Label",
+                  val: "Rebrand Zoiko Orbit eSIMs as your own product",
+                  org: true,
+                },
+                {
+                  label: "API Access",
+                  val: "Full API for seamless eSIM integration",
+                  org: true,
+                },
+                {
+                  label: "Revenue Sharing",
+                  val: "Competitive commissions on every sale",
+                  org: true,
+                },
+                {
+                  label: "API Documentation",
+                  val: "Full docs + sandbox environment",
+                  org: true,
+                },
+                {
+                  label: "Marketing Support",
+                  val: "Co-branded materials & promotional tools",
+                  org: true,
+                },
+                {
+                  label: "Dedicated Manager",
+                  val: "Your own partner account manager",
+                  org: true,
+                },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/travel-ecosystem-partner/",
+                  label: "Become a Partner",
+                },
+                {
+                  url: "https://zoikoorbit.com/support/",
+                  label: "Contact Partnerships Team",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🤝 Apply Now",
+                  action: "I need support",
+                  type: "primary",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // PERSONAL TRAVELERS
+        if (
+          /personal.*travel|travel.*personal|for.*travel|traveler|traveller/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "Zoiko Orbit is perfect for **personal travelers**! ✈️",
+            cards: [
+              makeInfoCard("✈️", "For Personal Travelers", [
+                {
+                  label: "Instant eSIM",
+                  val: "Activate before you land — scan QR, done",
+                  org: true,
+                },
+                {
+                  label: "200+ countries",
+                  val: "One account, worldwide coverage",
+                  org: true,
+                },
+                {
+                  label: "Flexible plans",
+                  val: "Daily, weekly & monthly options",
+                  org: true,
+                },
+                {
+                  label: "No roaming fees",
+                  val: "Local data rates, no bill shock",
+                  org: true,
+                },
+                {
+                  label: "24/7 Support",
+                  val: "AI + human support whenever you need it",
+                  org: true,
+                },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/personal-travelers/",
+                  label: "Personal Travelers Page",
+                },
+                { url: "https://zoikoorbit.com/plans/", label: "Browse Plans" },
+              ]),
+              makeActionBar([
+                {
+                  label: "📱 Browse Plans",
+                  action: "Show me available eSIM plans",
+                  type: "primary",
+                },
+                {
+                  label: "🔌 Activate eSIM",
+                  action: "How do I activate my eSIM?",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // SUPPORT / HELP
+        if (
+          /support|help|contact|agent|human|speak\s*to|talk\s*to|live\s*person|customer\s*service/i.test(
+            t,
+          )
+        ) {
+          return {
+            text: "We're here to help — **24/7**! 🎧\n\nWould you like to submit a support request or I can try to resolve your issue right here?",
+            cards: [
+              makeInfoCard("🎧", "Zoiko Orbit Support", [
+                { label: "Email", val: "support@zoikoorbit.com", org: true },
+                {
+                  label: "Support Portal",
+                  val: "zoikoorbit.com/support/",
+                  org: true,
+                },
+                { label: "Availability", val: "24/7 — always open", org: true },
+                {
+                  label: "Response time",
+                  val: "Normal: 24hrs · Urgent: 1hr",
+                  org: true,
+                },
+              ]),
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/support/",
+                  label: "Submit a Support Request",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🎧 Create Ticket",
+                  action: "__callback__",
+                  type: "primary",
+                },
+                {
+                  label: "📧 Email Support",
+                  action: "What is the support email?",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // SUPPORT EMAIL
+        if (/email|support.*email|contact.*email/i.test(t)) {
+          return {
+            text: "You can reach Zoiko Orbit support at:\n\n📧 **support@zoikoorbit.com**\n\nOr submit a ticket at **https://zoikoorbit.com/support/**\n\nWe respond within 24 hours (urgent issues within 1 hour).",
+            cards: [
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/support/",
+                  label: "Submit a Ticket Online",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🎧 Create Ticket",
+                  action: "__callback__",
+                  type: "primary",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // IMPACT
+        if (
+          /impact|our.*impact|community|environment|sustainability/i.test(t)
+        ) {
+          return {
+            text: "Zoiko Orbit is committed to making a positive impact! 🌱",
+            cards: [
+              makeLinksBar([
+                {
+                  url: "https://zoikoorbit.com/our-impact/",
+                  label: "Read About Our Impact",
+                },
+              ]),
+              makeActionBar([
+                {
+                  label: "🌍 About Us",
+                  action: "Tell me about Zoiko Orbit",
+                  type: "primary",
+                },
+              ]),
+            ],
+          };
+        }
+
+        // DEFAULT FALLBACK
+        return {
+          text: "I'm not sure I understood that — let me help you find the right answer! 😊\n\nHere are the most common topics I can help with:",
+          cards: [
+            makeMenuCards([
+              {
+                ico: "📱",
+                title: "eSIM Plans",
+                sub: "Browse plans for 200+ countries",
+                action: "Show me available eSIM plans",
+              },
+              {
+                ico: "🔌",
+                title: "Activate eSIM",
+                sub: "Step-by-step activation guide",
+                action: "How do I activate my eSIM?",
+              },
+              {
+                ico: "📶",
+                title: "Connectivity Issue",
+                sub: "Fix no signal, slow data, roaming",
+                action: "My internet is not working",
+              },
+              {
+                ico: "💳",
+                title: "Billing & Refunds",
+                sub: "Invoices, charges, refund requests",
+                action: "I have a billing question",
+              },
+              {
+                ico: "🏢",
+                title: "Enterprise",
+                sub: "Bulk SIM, corporate, API integration",
+                action: "Tell me about enterprise eSIM options",
+              },
+              {
+                ico: "🎧",
+                title: "Contact Support",
+                sub: "Talk to a human agent 24/7",
+                action: "I need support",
+              },
+            ]),
+          ],
+        };
+      }
+
+      // ══════════════════════════════════════════════
+      //  MAIN SEND FUNCTION
+      // ══════════════════════════════════════════════
+      async function send() {
+        const text = txt.value.trim();
+        if (!text || typing) return;
+        txt.value = "";
+        txt.style.height = "auto";
+        charCount.textContent = "";
+        const welcome = document.getElementById("welcome");
+        if (welcome) welcome.style.display = "none";
+        const chipsEl = document.getElementById("chips");
+        if (chipsEl) chipsEl.style.display = "none";
+        addUserMsg(text);
+        chatMsgs.push({ role: "user", content: text });
+        typing = true;
+        sendBtn.disabled = true;
+        showTyping();
+        await delay(600 + Math.random() * 400);
+
+        // Smart reply fallback (also works offline / no API key)
+        if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
+          hideTyping();
+          const sr = smartReply(text);
+          chatMsgs.push({ role: "assistant", content: sr.text || "" });
+          streamMsg(
+            sr.text || "",
+            () => {
+              if (autoSpeak && sr.text) speak(sr.text);
+            },
+            sr.cards || [],
+          );
+          sendBtn.disabled = false;
+          typing = false;
+          return;
+        }
+
+        try {
+          let messages = chatMsgs.slice(-20);
+          let finalReply = null;
+
+          for (let turn = 0; turn < 6; turn++) {
+            const res = await fetch("https://api.anthropic.com/v1/messages", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-api-key": API_KEY,
+                "anthropic-version": "2023-06-01",
+                "anthropic-dangerous-direct-browser-access": "true",
+              },
+              body: JSON.stringify({
+                model: "claude-sonnet-4-20250514",
+                max_tokens: 1000,
+                system: SYSTEM,
+                tools: TOOLS,
+                messages,
+              }),
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message || "API error");
+            const toolUses = (data.content || []).filter(
+              (b) => b.type === "tool_use",
+            );
+            const textParts = (data.content || []).filter(
+              (b) => b.type === "text",
+            );
+            if (!toolUses.length) {
+              finalReply = textParts
+                .map((b) => b.text)
+                .join("")
+                .trim();
+              break;
+            }
+            messages.push({ role: "assistant", content: data.content });
+            const results = [];
+            for (const tc of toolUses) {
+              const labels = TOOL_LABELS[tc.name] || ["🤔 Processing..."];
+              showToolBar(labels[Math.floor(Math.random() * labels.length)]);
+              await delay(300);
+              results.push({
+                type: "tool_result",
+                tool_use_id: tc.id,
+                content: JSON.stringify(executeTool(tc.name, tc.input)),
+              });
+            }
+            messages.push({ role: "user", content: results });
+            showToolBar("💭 Writing a response...");
+          }
+
+          if (!finalReply) {
+            const sr = smartReply(text);
+            finalReply = sr.text || "";
+          }
+          hideTyping();
+          hideToolBar();
+          chatMsgs.push({ role: "assistant", content: finalReply });
+          const srCards = smartReply(text);
+          streamMsg(
+            finalReply,
+            () => {
+              if (autoSpeak) speak(finalReply);
+            },
+            srCards.cards || [],
+          );
+        } catch (err) {
+          hideTyping();
+          hideToolBar();
+          const sr = smartReply(text);
+          chatMsgs.push({ role: "assistant", content: sr.text || "" });
+          streamMsg(
+            sr.text || "",
+            () => {
+              if (autoSpeak && sr.text) speak(sr.text);
+            },
+            sr.cards || [],
+          );
+          console.error("Zoikon error:", err);
+        }
+        sendBtn.disabled = false;
+        typing = false;
+      }
+
+      // ══════════════════════════════════════════════
+      //  UI HELPERS
+      // ══════════════════════════════════════════════
+      function addUserMsg(text) {
+        const wrap = document.createElement("div");
+        wrap.className = "msg user";
+        const ava = document.createElement("div");
+        ava.className = "mava";
+        ava.textContent = "👤";
+        const inner = document.createElement("div");
+        inner.style.cssText =
+          "display:flex;flex-direction:column;max-width:100%";
+        const bbl = document.createElement("div");
+        bbl.className = "bubble";
+        bbl.innerHTML = fmt(text);
+        inner.appendChild(bbl);
+        wrap.appendChild(ava);
+        wrap.appendChild(inner);
+        msgs.appendChild(wrap);
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+
+      function makeMenuCards(items) {
+        const wrap = document.createElement("div");
+        wrap.className = "menu-cards";
+        items.forEach((item) => {
+          const btn = document.createElement("button");
+          btn.className = "menu-card";
+          btn.innerHTML = `<div class="menu-card-ico">${item.ico}</div><div class="menu-card-body"><div class="menu-card-title">${item.title}</div>${item.sub ? `<div class="menu-card-sub">${item.sub}</div>` : ""}</div><div class="menu-card-arr">›</div>`;
+          btn.onclick = () => quick(item.action || item.title);
+          wrap.appendChild(btn);
+        });
+        return wrap;
+      }
+
+      function makeInfoCard(icon, title, rows) {
+        const card = document.createElement("div");
+        card.className = "info-card";
+        const rowsHtml = rows
+          .map(
+            (r) =>
+              `<div class="info-row"><div class="info-row-label">${r.label}</div><div class="info-row-val${r.org ? " org" : r.green ? " green" : ""}">${r.val}</div></div>`,
+          )
+          .join("");
+        card.innerHTML = `<div class="info-card-hdr"><div class="info-card-hdr-ico">${icon}</div><div class="info-card-hdr-title">${title}</div></div><div class="info-card-body">${rowsHtml}</div>`;
+        return card;
+      }
+
+      function makeStepCard(title, steps) {
+        const card = document.createElement("div");
+        card.className = "step-card";
+        const sh = steps
+          .map(
+            (s, i) =>
+              `<div class="step-item"><div class="step-num">${i + 1}</div><div><div class="step-body-title">${s.label}</div>${s.sub ? `<div class="step-body-sub">${s.sub}</div>` : ""}</div></div>`,
+          )
+          .join("");
+        card.innerHTML = `<div class="step-card-title">${title}</div>${sh}`;
+        return card;
+      }
+
+      function makeLinksBar(links) {
+        const wrap = document.createElement("div");
+        wrap.className = "links-bar";
+        links.forEach((l) => {
+          const a = document.createElement("a");
+          a.href = l.url;
+          a.target = "_blank";
+          a.className = "link-btn";
+          a.innerHTML =
+            "🔗 " +
+            l.label +
+            ' <span style="opacity:.5;font-size:10px">↗</span>';
+          wrap.appendChild(a);
+        });
+        return wrap;
+      }
+
+      function makeActionBar(actions) {
+        const bar = document.createElement("div");
+        bar.className = "action-bar";
+        actions.forEach((a) => {
+          const btn = document.createElement("button");
+          btn.className = "act-btn" + (a.type ? " " + a.type : "");
+          btn.textContent = a.label;
+          btn.onclick = () => {
+            if (a.action === "__callback__") setTimeout(addEscalate, 200);
+            else quick(a.action || a.label);
+          };
+          bar.appendChild(btn);
+        });
+        return bar;
+      }
+
+      function makeNotif(type, ico, text) {
+        const el = document.createElement("div");
+        el.className = "notif-strip " + type;
+        el.innerHTML = `<span>${ico}</span><span>${text}</span>`;
+        return el;
+      }
+
+      // ══════════════════════════════════════════════
+      //  ESCALATION CARD
+      // ══════════════════════════════════════════════
+      function addEscalate() {
+        const wrap = document.createElement("div");
+        wrap.className = "msg bot";
+        const ava = document.createElement("div");
+        ava.className = "mava";
+        ava.innerHTML = `<img src="${LOGO}" alt="Z"/>`;
+        const inner = document.createElement("div");
+        inner.style.cssText =
+          "display:flex;flex-direction:column;max-width:100%";
+        const card = document.createElement("div");
+        card.className = "escalate-card";
+        card.innerHTML = `
+    <div class="esc-ico">🎧</div>
+    <div class="esc-title">Connect with Our Support Team</div>
+    <div class="esc-sub">Share your details and we'll get back to you</div>
+    <div class="esc-form">
+      <input class="esc-input" id="escName"  placeholder="Your name" />
+      <input class="esc-input" id="escEmail" placeholder="Your email" />
+      <textarea class="esc-input" id="escIssue" placeholder="Describe your issue..." style="resize:none;height:60px"></textarea>
+      <button class="esc-btn" onclick="submitEscalate()">📤 Submit Request</button>
+    </div>
+    <div style="margin-top:8px">
+      <a href="https://zoikoorbit.com/support/" target="_blank" class="link-btn" style="font-size:11px">🔗 Visit Support Centre ↗</a>
+    </div>`;
+        inner.appendChild(card);
+        wrap.appendChild(ava);
+        wrap.appendChild(inner);
+        msgs.appendChild(wrap);
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+
+      function addEscalateWithData(name, email, issue, ref) {
+        const wrap = document.createElement("div");
+        wrap.className = "msg bot";
+        const ava = document.createElement("div");
+        ava.className = "mava";
+        ava.innerHTML = `<img src="${LOGO}" alt="Z"/>`;
+        const inner = document.createElement("div");
+        inner.style.cssText =
+          "display:flex;flex-direction:column;max-width:100%";
+        const card = document.createElement("div");
+        card.className = "escalate-card";
+        card.innerHTML = `
+    <div class="esc-ico">✅</div>
+    <div class="esc-title">Support Ticket Created!</div>
+    <div class="esc-sub">Reference: <strong>${ref}</strong> · Response within 24 hours</div>
+    <div style="padding:10px 14px;font-size:12px;color:var(--muted2)">
+      <div>👤 <strong>${name}</strong></div>
+      <div>📧 ${email}</div>
+      <div style="margin-top:6px;color:var(--muted)">Issue: ${issue}</div>
+    </div>
+    <a href="https://zoikoorbit.com/support/" target="_blank" class="link-btn" style="font-size:11px;margin:0 14px 12px">🔗 Track at Support Centre ↗</a>`;
+        inner.appendChild(card);
+        wrap.appendChild(ava);
+        wrap.appendChild(inner);
+        msgs.appendChild(wrap);
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+
+      function submitEscalate() {
+        const name = (document.getElementById("escName") || {}).value?.trim();
+        const email = (document.getElementById("escEmail") || {}).value?.trim();
+        const issue = (document.getElementById("escIssue") || {}).value?.trim();
+        if (!name || !email || !issue) {
+          toast("Please fill in all fields");
+          return;
+        }
+        if (!/\S+@\S+\.\S+/.test(email)) {
+          toast("Please enter a valid email");
+          return;
+        }
+        const ref = "ZKO-" + Date.now().toString().slice(-6);
+        const card = document.querySelector(".escalate-card");
+        if (card) card.closest(".msg").remove();
+        addEscalateWithData(name, email, issue, ref);
+        toast("✅ Ticket submitted! Ref: " + ref);
+      }
+
+      // ══════════════════════════════════════════════
+      //  STREAM BOT MESSAGE
+      // ══════════════════════════════════════════════
+      function streamMsg(text, callback, cards) {
+        msgCount++;
+        const wrap = document.createElement("div");
+        wrap.className = "msg bot";
+        const ava = document.createElement("div");
+        ava.className = "mava";
+        ava.innerHTML = `<img src="${LOGO}" alt="Z"/>`;
+        const inner = document.createElement("div");
+        inner.style.cssText =
+          "display:flex;flex-direction:column;max-width:100%";
+        const bbl = document.createElement("div");
+        bbl.className = "bubble";
+        inner.appendChild(bbl);
+        wrap.appendChild(ava);
+        wrap.appendChild(inner);
+        msgs.appendChild(wrap);
+        msgs.scrollTop = msgs.scrollHeight;
+
+        const words = (text || "").split(" ");
+        let i = 0,
+          displayed = "";
+        const cursor =
+          '<span style="display:inline-block;width:2px;height:12px;background:var(--org);margin-left:2px;border-radius:1px;animation:blink .65s infinite;vertical-align:middle"></span>';
+
+        function tick() {
+          if (i >= words.length) {
+            bbl.innerHTML = fmt(text || "");
+            appendReactions(inner, text || "", cards);
+            if (callback) callback();
+            msgs.scrollTop = msgs.scrollHeight;
+            return;
+          }
+          displayed += (i > 0 ? " " : "") + words[i];
+          bbl.innerHTML = fmt(displayed) + cursor;
+          msgs.scrollTop = msgs.scrollHeight;
+          i++;
+          const prev = words[i - 1];
+          const pause =
+            prev &&
+            (prev.endsWith(".") || prev.endsWith("!") || prev.endsWith("?"))
+              ? 80
+              : 20 + Math.random() * 14;
+          setTimeout(tick, pause);
+        }
+        tick();
+      }
+
+      function appendReactions(inner, text, cards) {
+        if (cards && cards.length) cards.forEach((c) => inner.appendChild(c));
+        const rxns = document.createElement("div");
+        rxns.className = "reactions";
+        const speakB = document.createElement("button");
+        speakB.className = "speak-btn";
+        speakB.innerHTML = "🔊 Listen";
+        speakB.onclick = () => speak(text, speakB);
+        const copyB = document.createElement("button");
+        copyB.className = "copy-btn";
+        copyB.innerHTML = "📋 Copy";
+        copyB.onclick = () => {
+          const clean = text
+            .replace(/\*\*(.*?)\*\*/g, "$1")
+            .replace(/\*(.*?)\*/g, "$1")
+            .trim();
+          navigator.clipboard
+            .writeText(clean)
+            .then(() => {
+              copyB.innerHTML = "✅ Copied!";
+              copyB.classList.add("done");
+              setTimeout(() => {
+                copyB.innerHTML = "📋 Copy";
+                copyB.classList.remove("done");
+              }, 2000);
+            })
+            .catch(() => toast("Please copy manually."));
+        };
+        const likeB = document.createElement("button");
+        likeB.className = "react-btn";
+        likeB.innerHTML = "👍 Helpful";
+        const dislikeB = document.createElement("button");
+        dislikeB.className = "react-btn";
+        dislikeB.innerHTML = "👎";
+        likeB.onclick = () => {
+          if (!likeB.classList.contains("liked")) {
+            likeB.classList.add("liked");
+            likeB.innerHTML = "👍 Thanks!";
+            dislikeB.classList.remove("disliked");
+            dislikeB.innerHTML = "👎";
+            toast("Thanks for the feedback! 😊");
+          }
+        };
+        dislikeB.onclick = () => {
+          if (!dislikeB.classList.contains("disliked")) {
+            dislikeB.classList.add("disliked");
+            dislikeB.innerHTML = "👎 Got it";
+            likeB.classList.remove("liked");
+            likeB.innerHTML = "👍 Helpful";
+            toast("I'll do better next time!");
+            setTimeout(addEscalate, 600);
+          }
+        };
+        rxns.appendChild(speakB);
+        rxns.appendChild(copyB);
+        rxns.appendChild(likeB);
+        rxns.appendChild(dislikeB);
+        inner.appendChild(rxns);
+      }
+
+      // ══════════════════════════════════════════════
+      //  TYPING INDICATOR
+      // ══════════════════════════════════════════════
+      let typEl = null;
+      function showTyping() {
+        typEl = document.createElement("div");
+        typEl.className = "msg bot";
+        typEl.innerHTML = `<div class="mava" style="background:#fff;padding:2px"><img src="${LOGO}" alt="Z"/></div><div class="bubble"><div class="dots"><span></span><span></span><span></span></div></div>`;
+        msgs.appendChild(typEl);
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+      function hideTyping() {
+        if (typEl) {
+          typEl.remove();
+          typEl = null;
+        }
+      }
+
+      // ══════════════════════════════════════════════
+      //  MARKDOWN FORMATTER
+      // ══════════════════════════════════════════════
+      function fmt(text) {
+        return text
+          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+          .replace(/\*(.*?)\*/g, "<em>$1</em>")
+          .replace(/\n/g, "<br/>");
+      }
+
+      // ══════════════════════════════════════════════
+      //  UTILITIES
+      // ══════════════════════════════════════════════
+      function toast(msg) {
+        const ex = document.querySelector(".toast");
+        if (ex) ex.remove();
+        const t = document.createElement("div");
+        t.className = "toast";
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => {
+          t.style.animation = "toastOut .28s ease forwards";
+          setTimeout(() => t.remove(), 280);
+        }, 3000);
+      }
+      function delay(ms) {
+        return new Promise((r) => setTimeout(r, ms));
+      }
+
+      // ══════════════════════════════════════════════
+      //  VOICE — TTS
+      // ══════════════════════════════════════════════
+      const FEMALE_PRIORITY = [
+        "Microsoft Aria Online (Natural) - English (United States)",
+        "Google US English",
+        "Samantha",
+        "Karen",
+        "Victoria",
+      ];
+      function isMale(v) {
+        return [
+          "david",
+          "james",
+          "mark",
+          "ryan",
+          "eric",
+          "alex",
+          "paul",
+          "male",
+        ].some((m) => v.name.toLowerCase().includes(m));
+      }
+      function pickFemaleVoice() {
+        const vs = window.speechSynthesis.getVoices();
+        for (const t of FEMALE_PRIORITY) {
+          const f = vs.find((v) => v.name.toLowerCase() === t.toLowerCase());
+          if (f && !isMale(f)) return f;
+        }
+        return (
+          vs.filter((v) => v.lang.startsWith("en") && !isMale(v))[0] || null
+        );
+      }
+      function speak(text, btn) {
+        if (!("speechSynthesis" in window)) return;
+        window.speechSynthesis.cancel();
+        const clean = text
+          .replace(/\*\*(.*?)\*\*/g, "$1")
+          .replace(/\*(.*?)\*/g, "$1")
+          .replace(/<br\/>/g, ". ")
+          .replace(/<[^>]+>/g, "")
+          .replace(/[^\x00-\x7F]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (!clean) return;
+        const u = new SpeechSynthesisUtterance(clean);
+        u.lang = "en-US";
+        u.rate = 0.93;
+        u.pitch = 1.18;
+        u.volume = 1.0;
+        const voice = pickFemaleVoice();
+        if (voice) u.voice = voice;
+        vbarWrap.classList.add("on");
+        vlabel.textContent = "Speaking...";
+        u.onend = () => {
+          vbarWrap.classList.remove("on");
+          if (btn) {
+            btn.innerHTML = "🔊 Listen";
+            btn.classList.remove("on");
+          }
+        };
+        u.onerror = () => {
+          vbarWrap.classList.remove("on");
+          if (btn) {
+            btn.innerHTML = "🔊 Listen";
+            btn.classList.remove("on");
+          }
+        };
+        if (btn) {
+          btn.innerHTML = "⏹ Stop";
+          btn.classList.add("on");
+          btn.onclick = () => {
+            window.speechSynthesis.cancel();
+            btn.innerHTML = "🔊 Listen";
+            btn.classList.remove("on");
+            vbarWrap.classList.remove("on");
+          };
+        }
+        if (!window.speechSynthesis.getVoices().length)
+          setTimeout(() => {
+            const v2 = pickFemaleVoice();
+            if (v2) u.voice = v2;
+            window.speechSynthesis.speak(u);
+          }, 150);
+        else window.speechSynthesis.speak(u);
+      }
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.onvoiceschanged = () =>
+          window.speechSynthesis.getVoices();
+        window.addEventListener("load", () =>
+          window.speechSynthesis.getVoices(),
+        );
+      }
+      muteBtn.addEventListener("click", () => {
+        autoSpeak = !autoSpeak;
+        muteBtn.textContent = autoSpeak ? "🔊" : "🔇";
+        muteBtn.classList.toggle("active", autoSpeak);
+        if (!autoSpeak) window.speechSynthesis.cancel();
+        toast(autoSpeak ? "🔊 Auto-speak on" : "🔇 Auto-speak off");
+      });
+
+      // ══════════════════════════════════════════════
+      //  SPEECH-TO-TEXT
+      // ══════════════════════════════════════════════
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SR) {
+        recognition = new SR();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = "en-US";
+        recognition.onstart = () => {
+          listening = true;
+          micBtn.classList.add("mic-on");
+          vbarWrap.classList.add("on");
+          vlabel.textContent = "Listening...";
+        };
+        recognition.onresult = (e) => {
+          txt.value = Array.from(e.results)
+            .map((r) => r[0].transcript)
+            .join("");
+          txt.style.height = "auto";
+          txt.style.height = Math.min(txt.scrollHeight, 90) + "px";
+        };
+        recognition.onend = () => {
+          listening = false;
+          micBtn.classList.remove("mic-on");
+          vbarWrap.classList.remove("on");
+          if (txt.value.trim()) send();
+        };
+        recognition.onerror = (e) => {
+          listening = false;
+          micBtn.classList.remove("mic-on");
+          vbarWrap.classList.remove("on");
+          if (e.error !== "no-speech") toast("🎤 Mic error: " + e.error);
+        };
+      }
+      micBtn.addEventListener("click", async () => {
+        if (!SR) {
+          toast("❌ Voice not supported. Use Chrome or Edge.");
+          return;
+        }
+        if (listening) {
+          recognition.stop();
+          return;
+        }
+        try {
+          const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+          s.getTracks().forEach((t) => t.stop());
+          window.speechSynthesis.cancel();
+          recognition.start();
+        } catch (err) {
+          toast("❌ Mic error: " + err.message);
+        }
+      });
+
+      // ══════════════════════════════════════════════
+      //  CLEAR CHAT
+      // ══════════════════════════════════════════════
+      clearBtn.addEventListener("click", () => {
+        chatMsgs = [];
+        msgCount = 0;
+        sessionStart = Date.now();
+        window.speechSynthesis.cancel();
+        hideToolBar();
+        msgs.innerHTML = `
+    <div class="welcome" id="welcome">
+      <div class="wlogo"><img src="${LOGO}" alt="Zoiko Orbit"/></div>
+      <div class="wsub">New conversation — How can I help you today?</div>
+    </div>
+    <div class="chips" id="chips">
+      <div class="chip" onclick="quick('Show me available eSIM plans')">📱 eSIM Plans</div>
+      <div class="chip" onclick="quick('How do I activate my eSIM?')">🔌 Activate eSIM</div>
+      <div class="chip" onclick="quick('Which plan is best for Europe?')">🌍 Travel Plans</div>
+      <div class="chip" onclick="quick('Tell me about enterprise eSIM options')">🏢 Enterprise</div>
+      <div class="chip" onclick="quick('Tell me about the partner programme')">🤝 Partners</div>
+      <div class="chip" onclick="quick('My internet is not working')">📶 Fix Connectivity</div>
+      <div class="chip" onclick="quick('How do I get a refund?')">💳 Billing</div>
+      <div class="chip" onclick="quick('I need support')">🎧 Help</div>
+    </div>`;
+      });
+
+      // ══════════════════════════════════════════════
+      //  HISTORY BTN (placeholder)
+      // ══════════════════════════════════════════════
+      histBtn.addEventListener("click", () =>
+        toast("💬 Chat history — coming soon!"),
+      );
+
+      // ══════════════════════════════════════════════
+      //  BOOT GREETING
+      // ══════════════════════════════════════════════
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          const greeting =
+            "Hey there! 👋 Welcome to **Zoiko Orbit**! I'm **Zoikon** — your AI travel connectivity assistant.\n\nI can help with **eSIM plans**, **activation**, **connectivity issues**, **enterprise solutions**, **partner programmes**, and much more. What can I help you with today?";
+          const bootCards = [
+            makeMenuCards([
+              {
+                ico: "📱",
+                title: "Browse eSIM Plans",
+                sub: "200+ countries · Instant activation",
+                action: "Show me available eSIM plans",
+              },
+              {
+                ico: "🔌",
+                title: "Activate My eSIM",
+                sub: "Step-by-step for iPhone & Android",
+                action: "How do I activate my eSIM?",
+              },
+              {
+                ico: "🌍",
+                title: "Find a Travel Plan",
+                sub: "Tell me your destination & I'll recommend",
+                action: "Which plan is best for my trip?",
+              },
+              {
+                ico: "📶",
+                title: "Fix Connectivity Issue",
+                sub: "No signal, slow data, roaming problems",
+                action: "My internet is not working",
+              },
+              {
+                ico: "🏢",
+                title: "Enterprise Solutions",
+                sub: "Bulk SIM, API integration, corporate accounts",
+                action: "Tell me about enterprise eSIM options",
+              },
+              {
+                ico: "🤝",
+                title: "Become a Partner",
+                sub: "White-label, agencies, API partners",
+                action: "Tell me about the partner programme",
+              },
+            ]),
+          ];
+          streamMsg(greeting, null, bootCards);
+        }, 700);
+      });
+    </script>
+  </body>
+</html>
