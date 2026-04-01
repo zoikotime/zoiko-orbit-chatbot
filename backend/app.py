@@ -25,7 +25,7 @@ SMTP_HOST     = os.getenv("SMTP_HOST",     "smtpout.secureserver.net")
 SMTP_PORT     = int(os.getenv("SMTP_PORT", "465"))
 SMTP_USER     = os.getenv("SMTP_USER",     "support@zoikogroup.com")
 SMTP_PASS     = os.getenv("SMTP_PASS",     "NoxxMC26070%!LGM")
-SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "support@zoikomobile.com")
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "info@zoikoorbit.com")
 
 print(f"\n📧 EMAIL CONFIGURATION:")
 print(f"   SMTP Host: {SMTP_HOST}")
