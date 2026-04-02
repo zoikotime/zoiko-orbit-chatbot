@@ -187,7 +187,7 @@ git push origin main
 
 After deployment, Cloud Run shows public URL:
 ```
-https://oriko-[random].europe-west1.run.app/ui
+(https://zoiko-orbit-chatbot-git-722985113446.europe-west1.run.app/ui/)
 ```
 
 ---
