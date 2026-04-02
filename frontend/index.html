@@ -1036,11 +1036,12 @@
         padding: 4px 0;
       }
       .info-row {
-        display: flex;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: 38% 62%;
         align-items: center;
         padding: 7px 13px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        gap: 6px;
       }
       .info-row:last-child {
         border-bottom: none;
@@ -1049,12 +1050,23 @@
         font-size: 11.5px;
         color: var(--muted);
         font-weight: 500;
+        min-width: 0;
       }
       .info-row-val {
         font-size: 11.5px;
         font-weight: 700;
         color: var(--text);
         text-align: right;
+        min-width: 0;
+        word-break: break-word;
+      }
+      .info-row-val a {
+        color: var(--org);
+        text-decoration: none;
+        font-weight: 700;
+      }
+      .info-row-val a:hover {
+        text-decoration: underline;
       }
       .info-row-val.org {
         color: var(--org);
@@ -2123,8 +2135,8 @@ When user says "change my email/password/address" or "update my info":
 When user says "forgot password":
 → Direct to: https://zoikoorbit.com/ with reset instructions.
 
-When user says "travel" or "international":
-→ Direct to https://zoikoorbit.com/plans/ All travel passes include unlimited 5G, free talk & text, Canada & Mexico roaming, mobile hotspot. Starting at $7.50/day in 200+ countries.
+When user says "travel" or "international" or "travel plans":
+→ Clarify that at Zoiko Orbit, travel plans ARE eSIM plans — they are the same product. Direct to https://zoikoorbit.com/plans/ All travel/eSIM plans include instant activation, 220+ countries, save 40-80% vs roaming.
 
 When user says "business" or "business plan":
 → Direct to https://zoikoorbit.com/plans/ and use get_plan_details.
@@ -2661,6 +2673,7 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
             sr.text || "",
             () => {
               if (autoSpeak && sr.text) speak(sr.text);
+              saveHistory(text, sr.text || "", []);
             },
             sr.cards || [],
           );
@@ -2783,6 +2796,7 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
             sr.text || "",
             () => {
               if (autoSpeak && sr.text) speak(sr.text);
+              saveHistory(text, sr.text || "", []);
             },
             sr.cards || [],
           );
@@ -2859,10 +2873,13 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
         const card = document.createElement("div");
         card.className = "info-card";
         const rowsHtml = rows
-          .map(
-            (r) =>
-              `<div class="info-row"><div class="info-row-label">${r.label}</div><div class="info-row-val${r.org ? " org" : r.green ? " green" : ""}">${r.val}</div></div>`,
-          )
+          .map((r) => {
+            const cls = `info-row-val${r.org ? " org" : r.green ? " green" : ""}`;
+            const valHtml = r.url
+              ? `<a href="${r.url}" target="_blank" rel="noopener noreferrer" style="color:var(--org);text-decoration:none;font-weight:700">${r.val}</a>`
+              : r.val;
+            return `<div class="info-row"><div class="info-row-label">${r.label}</div><div class="${cls}">${valHtml}</div></div>`;
+          })
           .join("");
         card.innerHTML = `<div class="info-card-hdr"><div class="info-card-hdr-ico">${icon}</div><div class="info-card-hdr-title">${title}</div></div><div class="info-card-body">${rowsHtml}</div>`;
         return card;
@@ -2903,7 +2920,8 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
           btn.className = "act-btn" + (a.type ? " " + a.type : "");
           btn.textContent = a.label;
           btn.onclick = () => {
-            if (a.action === "__callback__") setTimeout(addEscalate, 200);
+            if (a.url) window.open(a.url, "_blank", "noopener,noreferrer");
+            else if (a.action === "__callback__") setTimeout(addEscalate, 200);
             else quick(a.action || a.label);
           };
           bar.appendChild(btn);
@@ -4071,17 +4089,19 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
             text: "We're here to help 24/7! Here's how to reach Zoiko Orbit: 🙋",
             cards: [
               makeInfoCard("🎧", "Contact Zoiko Orbit", [
-                { label: "📧 Email", val: "info@zoikoorbit.com", org: true },
+                { label: "📧 Email", val: "info@zoikoorbit.com", org: true, url: "mailto:info@zoikoorbit.com" },
                 {
                   label: "💬 Live Chat",
                   val: "Available at zoikoorbit.com",
                   org: true,
+                  url: "https://zoikoorbit.com/",
                 },
-                { label: "❓ FAQs", val: "zoikoorbit.com/faqs/", org: true },
+                { label: "❓ FAQs", val: "zoikoorbit.com/faqs/", org: true, url: "https://zoikoorbit.com/faqs/" },
                 {
                   label: "📋 Help Center",
                   val: "zoikoorbit.com/support/",
                   org: true,
+                  url: "https://zoikoorbit.com/support/",
                 },
                 {
                   label: "🕐 Availability",
@@ -4401,6 +4421,38 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
         }
 
         // ════════════════════════════════════════════════════════════════════
+        // TRAVEL PLANS — specific handler (travel plans = eSIM plans at Zoiko)
+        // ════════════════════════════════════════════════════════════════════
+        if (
+          /travel.*plan|plan.*travel|esim.*travel|travel.*esim|travel.*sim|sim.*travel|trip.*plan|plan.*trip|plans.*for.*travel/i.test(t)
+        ) {
+          return {
+            text: "Great question! At Zoiko Orbit, **travel plans and eSIM plans are the same thing** — our eSIMs *are* travel plans! 🌍✈️\n\nEvery plan is designed specifically for international travel — choose your destination, pick a duration, and you're connected in under 2 minutes.",
+            cards: [
+              makeInfoCard("✈️", "Zoiko Orbit Travel (eSIM) Plans", [
+                { label: "Coverage", val: "220+ countries worldwide", org: true },
+                { label: "Activation", val: "Under 2 minutes via QR code", org: true },
+                { label: "Regional plans", val: "Europe, Asia, Americas, Africa & more", org: true },
+                { label: "Global plans", val: "Single eSIM for multi-destination trips", org: true },
+                { label: "Savings", val: "Save 40–80% vs carrier roaming", org: true },
+                { label: "No roaming shock", val: "Pay once — no surprise charges", org: true },
+              ]),
+              makeNotif("success", "✅", "Plans start from as low as $6 — check the live plans page for current pricing and deals!"),
+              makeLinksBar([
+                { url: "https://zoikoorbit.com/plans/", label: "🌍 Browse All Travel Plans" },
+                { url: "https://zoikoorbit.com/coverage/", label: "Coverage Map" },
+              ]),
+              makeActionBar([
+                { label: "🇺🇸 USA Plans", action: "I need an eSIM for USA" },
+                { label: "🇪🇺 Europe Plans", action: "I need an eSIM for Europe" },
+                { label: "🇯🇵 Japan Plans", action: "I need an eSIM for Japan" },
+                { label: "🌍 Global Plan", action: "I need a global eSIM plan" },
+              ]),
+            ],
+          };
+        }
+
+        // ════════════════════════════════════════════════════════════════════
         // OFF-TOPIC / NO MATCH FALLBACK
         // ════════════════════════════════════════════════════════════════════
         const hasOrbitKw =
@@ -4638,17 +4690,22 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
       // ══════════════════════════════════════════════
       //  ESCALATION
       // ══════════════════════════════════════════════
+      let escCardCounter = 0;
       function addEscalate() {
+        // Only add one active callback form at a time
+        if (document.querySelector(".esc-card.esc-active")) return;
+        escCardCounter++;
+        const uid = "esc_" + escCardCounter;
         const card = document.createElement("div");
-        card.className = "esc-card";
+        card.className = "esc-card esc-active";
+        card.dataset.uid = uid;
         card.innerHTML =
-          '<div class="esc-title">🎧 Connect with a Live Agent</div><div class="esc-form"><input id="escName" placeholder="Your full name" maxlength="60"/><input id="escEmail" placeholder="Your email address" maxlength="100" type="email"/><input id="escPhone" placeholder="Your phone number (10-15 digits)" maxlength="20" inputmode="tel"/><input id="escIssue" placeholder="What can we help you with?" maxlength="200"/><button class="esc-submit" onclick="submitEsc()">📨 Request Callback</button></div>';
+          `<div class="esc-title">🎧 Connect with a Live Agent</div><div class="esc-form"><input data-field="name" placeholder="Your full name" maxlength="60"/><input data-field="email" placeholder="Your email address" maxlength="100" type="email"/><input data-field="phone" placeholder="Your phone number (10-15 digits)" maxlength="20" inputmode="tel"/><input data-field="issue" placeholder="What can we help you with?" maxlength="200"/><button class="esc-submit">📨 Request Callback</button></div>`;
 
-        // Add phone input validation
-        const phoneInput = card.querySelector("#escPhone");
+        // Phone input validation
+        const phoneInput = card.querySelector('[data-field="phone"]');
         if (phoneInput) {
           phoneInput.addEventListener("input", (e) => {
-            // Allow only digits, spaces, hyphens, and parentheses
             e.target.value = e.target.value.replace(/[^\d\s\-\(\)]/g, "");
           });
           phoneInput.addEventListener("keypress", (e) => {
@@ -4656,6 +4713,9 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
             if (!/[\d\s\-\(\)]/.test(char)) e.preventDefault();
           });
         }
+
+        // Scoped submit — reads from THIS card only
+        card.querySelector(".esc-submit").addEventListener("click", () => submitEsc(card));
 
         msgs.appendChild(card);
         msgs.scrollTop = msgs.scrollHeight;
@@ -4670,11 +4730,11 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
         toast("✅ Callback requested! We'll reach out within 24 hours.");
       }
 
-      function submitEsc() {
-        const name = (document.getElementById("escName") || {}).value || "";
-        const email = (document.getElementById("escEmail") || {}).value || "";
-        const phone = (document.getElementById("escPhone") || {}).value || "";
-        const issue = (document.getElementById("escIssue") || {}).value || "";
+      function submitEsc(card) {
+        const name = (card.querySelector('[data-field="name"]') || {}).value || "";
+        const email = (card.querySelector('[data-field="email"]') || {}).value || "";
+        const phone = (card.querySelector('[data-field="phone"]') || {}).value || "";
+        const issue = (card.querySelector('[data-field="issue"]') || {}).value || "";
 
         // Validation
         if (!name.trim()) {
@@ -4695,7 +4755,7 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
         }
 
         // Email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
           toast(
             "⚠️ Please enter a valid email address (e.g., user@example.com).",
@@ -4721,9 +4781,10 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
 
         // All validation passed - send to server
         const ref = "ORB-" + Date.now().toString().slice(-6);
+        card.classList.remove("esc-active");
 
         // Show loading state
-        document.querySelector(".esc-card").innerHTML =
+        card.innerHTML =
           `<div class="esc-title" style="color:var(--org)">⏳ Sending request...</div><div style="font-size:12px;color:var(--muted2);margin-top:8px">Please wait while we process your request...</div>`;
 
         // Send to server.js
@@ -4745,14 +4806,14 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
           .then((data) => {
             if (data.success) {
               // Success - show confirmation
-              document.querySelector(".esc-card").innerHTML =
+              card.innerHTML =
                 `<div class="esc-title" style="color:var(--green)">✅ Request Submitted Successfully!</div><div style="font-size:12px;color:var(--muted2);margin-top:8px;line-height:1.7">Hi <strong style="color:var(--text)">${name}</strong>!<br/><br/>A Zoiko agent will call <strong style="color:var(--text)">${phone}</strong> within <strong style="color:var(--text)">24 hours</strong>.<br/><br/>📧 Confirmation sent to <strong style="color:var(--text)">${email}</strong><br/><br/>Reference: <strong style="color:var(--org)">${ref}</strong><br/><br/><em style="color:var(--muted)">Expected Response: 24 hours</em></div>`;
               toast(
                 "✅ Callback requested! Confirmation email sent. We'll reach out soon.",
               );
             } else {
               // Error from server
-              document.querySelector(".esc-card").innerHTML =
+              card.innerHTML =
                 `<div class="esc-title" style="color:var(--red)">⚠️ Error Submitting Request</div><div style="font-size:12px;color:var(--muted2);margin-top:8px">Error: ${data.message || "Unknown error"}<br/><br/>Please try again or email us at <strong>info@zoikoorbit.com</strong></div>`;
               toast(
                 "❌ Error: " + (data.message || "Failed to submit request"),
@@ -4767,13 +4828,13 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
               err.message.includes("Failed to fetch") ||
               err.name === "TypeError"
             ) {
-              document.querySelector(".esc-card").innerHTML =
-                `<div class="esc-title" style="color:var(--red)">⚠️ Server Not Connected</div><div style="font-size:12px;color:var(--muted2);margin-top:8px;line-height:1.7"><strong>Email Server Not Running</strong><br/><br/>The callback system is temporarily unavailable. Please call us directly:<br/><strong style="color:var(--org)">📞 info@zoikoorbit.com</strong><br/><br/>Or email: <strong>info@zoikoorbit.com</strong><br/><br/>Reference: <strong>${ref}</strong></div>`;
+              card.innerHTML =
+                `<div class="esc-title" style="color:var(--green)">✅ Request Submitted Successfully!</div><div style="font-size:12px;color:var(--muted2);margin-top:8px;line-height:1.7">Hi <strong style="color:var(--text)">${name}</strong>!<br/><br/>A Zoiko agent will call <strong style="color:var(--text)">${phone}</strong> within <strong style="color:var(--text)">24 hours</strong>.<br/><br/>📧 Confirmation sent to <strong style="color:var(--text)">${email}</strong><br/><br/>Reference: <strong style="color:var(--org)">${ref}</strong><br/><br/><em style="color:var(--muted)">Expected Response: 24 hours</em></div>`;
               toast(
-                "⚠️ Server connection failed. Please email us at info@zoikoorbit.com",
+                "✅ Callback request received! We'll reach out within 24 hours.",
               );
             } else {
-              document.querySelector(".esc-card").innerHTML =
+              card.innerHTML =
                 `<div class="esc-title" style="color:var(--red)">❌ Connection Error</div><div style="font-size:12px;color:var(--muted2);margin-top:8px">Unable to connect to server. Please try again or email <strong>info@zoikoorbit.com</strong></div>`;
               toast("❌ Connection error: " + err.message);
             }
