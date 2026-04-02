@@ -200,7 +200,7 @@ https://oriko-[random].europe-west1.run.app/ui
 SMTP_HOST     = "smtpout.secureserver.net"
 SMTP_PORT     = 465
 SMTP_USER     = "support@zoikogroup.com"
-SMTP_PASS     = "NoxxMC26070%!LGM"
+SMTP_PASS     = 
 SUPPORT_EMAIL = "support@zoikoorbit.com"
 ```
 
