@@ -3172,6 +3172,124 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
         }
 
         // ════════════════════════════════════════════════════════════════════
+        // 0-A. URGENCY / EMERGENCY — catch FIRST before anything else
+        //      "I need help abroad urgently" "stuck abroad no data" "emergency"
+        // ════════════════════════════════════════════════════════════════════
+        if (
+          /urgent|urgently|emergency|right now|asap|immediately|as soon as|stranded|stuck abroad|stuck in|no internet.*abroad|abroad.*no internet|can't connect.*abroad|abroad.*can't connect|desperate|lost connection abroad/i.test(t)
+        ) {
+          const urgentDest = Object.keys({
+            usa:"USA", europe:"Europe", uk:"UK", japan:"Japan", india:"India",
+            australia:"Australia", canada:"Canada", uae:"UAE", dubai:"UAE",
+            singapore:"Singapore", thailand:"Thailand", france:"France",
+            germany:"Germany", italy:"Italy", spain:"Spain", bali:"Indonesia",
+            indonesia:"Indonesia", mexico:"Mexico", korea:"South Korea",
+            vietnam:"Vietnam", turkey:"Turkey", brazil:"Brazil", greece:"Greece",
+          }).find(k => t.includes(k));
+          return {
+            text: "I can see this is urgent — let's get you connected **right now**! ⚡\n\nHere's what to do immediately:",
+            cards: [
+              makeInfoCard("🚨", "Urgent eSIM — Fastest Path to Connection", [
+                { label: "Step 1", val: "Go to zoikoorbit.com/plans/ on any device", org: true },
+                { label: "Step 2", val: "Choose your destination & buy — takes 2 minutes", org: true },
+                { label: "Step 3", val: "Check email for QR code (arrives instantly)", org: true },
+                { label: "Step 4", val: "Settings → Add eSIM → Scan QR code", org: true },
+                { label: "Already have eSIM?", val: "Toggle Airplane Mode off/on, wait 30 seconds", org: true },
+                { label: "Still stuck?", val: "Email info@zoikoorbit.com — 24/7 support", org: true },
+              ]),
+              makeNotif("warn", "⚡", "Need it even faster? Email info@zoikoorbit.com with your order — our team is available 24/7."),
+              makeLinksBar([
+                { url: "https://zoikoorbit.com/plans/", label: "🚨 Buy eSIM Now" },
+                { url: "https://zoikoorbit.com/support/", label: "24/7 Support" },
+              ]),
+              makeActionBar([
+                { label: "🛒 Buy eSIM Now", action: "I want to buy an eSIM", type: "primary" },
+                { label: "🔧 eSIM Not Working", action: "I need help with my existing eSIM" },
+                { label: "🎧 Talk to Support", action: "I need support" },
+              ]),
+            ],
+          };
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        // 0-B. MULTI-STEP INTENT — "going to Japan AND iPhone compatible?"
+        //      Catches compound queries with BOTH destination + compatibility
+        // ════════════════════════════════════════════════════════════════════
+        const multiDestKeys = {
+          usa:"USA", "united states":"USA", america:"USA", europe:"Europe",
+          uk:"UK", britain:"UK", england:"UK", japan:"Japan", india:"India",
+          australia:"Australia", canada:"Canada", uae:"UAE", dubai:"UAE",
+          singapore:"Singapore", thailand:"Thailand", france:"France",
+          germany:"Germany", italy:"Italy", spain:"Spain", bali:"Indonesia",
+          indonesia:"Indonesia", mexico:"Mexico", korea:"South Korea",
+          vietnam:"Vietnam", turkey:"Turkey", brazil:"Brazil", greece:"Greece",
+          maldives:"Maldives", nepal:"Nepal", "sri lanka":"Sri Lanka",
+        };
+        const hasDestInQuery = Object.keys(multiDestKeys).find(k => t.includes(k));
+        const hasCompatInQuery = /iphone|samsung|pixel|android|my phone|my device|compatible|work with|will it work/i.test(t);
+        const hasBuyInQuery = /buy|purchase|get.*plan|order|how much|price|cost/i.test(t);
+
+        if (hasDestInQuery && hasCompatInQuery && !hasBuyInQuery) {
+          const cname = multiDestKeys[hasDestInQuery];
+          return {
+            text: `Great — let me answer both questions! First, let's check your device compatibility, then cover eSIM plans for **${cname}**. 📱🌍`,
+            cards: [
+              makeInfoCard("📱", "Is Your Device Compatible?", [
+                { label: "🍎 iPhone", val: "iPhone XS and newer (XS, XR, 11, 12, 13, 14, 15, 16)", org: true },
+                { label: "📱 Samsung", val: "Galaxy S20 series and newer, Z Fold/Flip", org: true },
+                { label: "🔵 Google Pixel", val: "Pixel 3 and newer", org: true },
+                { label: "📲 Other Android", val: "Most modern phones from 2020 onwards", org: true },
+                { label: "⚠️ Requirement", val: "Must be carrier-unlocked to use our eSIM", org: true },
+              ]),
+              makeInfoCard(`🌍`, `Zoiko Orbit eSIM — ${cname}`, [
+                { label: "Coverage", val: `${cname} — Tier-1 carrier coverage`, org: true },
+                { label: "Activation", val: "Under 2 minutes via QR code", org: true },
+                { label: "Keep your number", val: "Home SIM stays active alongside eSIM", org: true },
+                { label: "Savings", val: "Save 40–80% vs carrier roaming", org: true },
+              ]),
+              makeLinksBar([
+                { url: "https://zoikoorbit.com/plans/", label: `🌍 View ${cname} Plans` },
+                { url: "https://zoikoorbit.com/support/", label: "Full Compatibility List" },
+              ]),
+              makeActionBar([
+                { label: "🛒 Buy eSIM Now", action: "I want to buy an eSIM", type: "primary" },
+                { label: "🔌 How to Activate", action: "How do I activate my eSIM" },
+              ]),
+            ],
+          };
+        }
+
+        if (hasDestInQuery && hasBuyInQuery && hasCompatInQuery) {
+          const cname = multiDestKeys[hasDestInQuery];
+          return {
+            text: `Perfect — I'll cover all three: device compatibility, plans for **${cname}**, and how to buy! 🌍`,
+            cards: [
+              makeInfoCard("📱", "Quick Compatibility Check", [
+                { label: "iPhone XS+", val: "✅ Compatible", org: true },
+                { label: "Samsung S20+", val: "✅ Compatible", org: true },
+                { label: "Pixel 3+", val: "✅ Compatible", org: true },
+                { label: "Requirement", val: "Must be carrier-unlocked", org: true },
+              ]),
+              makeStepCard(`HOW TO GET AN eSIM FOR ${cname.toUpperCase()}`, [
+                { label: "Check compatibility above", sub: "Device must be carrier-unlocked" },
+                { label: `Visit zoikoorbit.com/plans/`, sub: `Select ${cname} as your destination` },
+                { label: "Purchase your plan", sub: "All major cards accepted — takes 2 minutes" },
+                { label: "Scan QR code from email", sub: "Settings → Add eSIM → Scan" },
+                { label: "You're connected! 🌍", sub: "Enjoy roaming-free data" },
+              ]),
+              makeLinksBar([
+                { url: "https://zoikoorbit.com/plans/", label: `🌍 View ${cname} Plans` },
+                { url: "https://zoikoorbit.com/support/", label: "Support" },
+              ]),
+              makeActionBar([
+                { label: "🛒 Buy eSIM Now", action: "I want to buy an eSIM", type: "primary" },
+                { label: "📱 Full Compat List", action: "Check if my device is compatible" },
+              ]),
+            ],
+          };
+        }
+
+        // ════════════════════════════════════════════════════════════════════
         // SINGLE-WORD / SHORT KEYWORD ROUTER
         // ════════════════════════════════════════════════════════════════════
         const swMap = {
@@ -3247,10 +3365,8 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
           qr: "How do I activate my eSIM",
           // Support
           support: "I need support",
-          help: "I need support",
           contact: "I need support",
           agent: "I need support",
-          email: "I need support",
           human: "I need support",
           // Coverage
           coverage: "Check coverage for my destination",
@@ -3419,6 +3535,8 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
           uk: { flag: "🇬🇧", name: "UK" },
           britain: { flag: "🇬🇧", name: "UK" },
           england: { flag: "🇬🇧", name: "UK" },
+          scotland: { flag: "🇬🇧", name: "UK" },
+          wales: { flag: "🇬🇧", name: "UK" },
           "united kingdom": { flag: "🇬🇧", name: "UK" },
           japan: { flag: "🇯🇵", name: "Japan" },
           india: { flag: "🇮🇳", name: "India" },
@@ -3426,12 +3544,64 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
           canada: { flag: "🇨🇦", name: "Canada" },
           uae: { flag: "🇦🇪", name: "UAE" },
           dubai: { flag: "🇦🇪", name: "UAE" },
+          abu: { flag: "🇦🇪", name: "UAE" },
+          emirates: { flag: "🇦🇪", name: "UAE" },
           singapore: { flag: "🇸🇬", name: "Singapore" },
           thailand: { flag: "🇹🇭", name: "Thailand" },
+          bangkok: { flag: "🇹🇭", name: "Thailand" },
+          phuket: { flag: "🇹🇭", name: "Thailand" },
           france: { flag: "🇫🇷", name: "France" },
+          paris: { flag: "🇫🇷", name: "France" },
           germany: { flag: "🇩🇪", name: "Germany" },
+          berlin: { flag: "🇩🇪", name: "Germany" },
           italy: { flag: "🇮🇹", name: "Italy" },
+          rome: { flag: "🇮🇹", name: "Italy" },
+          milan: { flag: "🇮🇹", name: "Italy" },
           spain: { flag: "🇪🇸", name: "Spain" },
+          barcelona: { flag: "🇪🇸", name: "Spain" },
+          madrid: { flag: "🇪🇸", name: "Spain" },
+          mexico: { flag: "🇲🇽", name: "Mexico" },
+          cancun: { flag: "🇲🇽", name: "Mexico" },
+          bali: { flag: "🇮🇩", name: "Indonesia" },
+          indonesia: { flag: "🇮🇩", name: "Indonesia" },
+          jakarta: { flag: "🇮🇩", name: "Indonesia" },
+          korea: { flag: "🇰🇷", name: "South Korea" },
+          "south korea": { flag: "🇰🇷", name: "South Korea" },
+          seoul: { flag: "🇰🇷", name: "South Korea" },
+          vietnam: { flag: "🇻🇳", name: "Vietnam" },
+          hanoi: { flag: "🇻🇳", name: "Vietnam" },
+          turkey: { flag: "🇹🇷", name: "Turkey" },
+          istanbul: { flag: "🇹🇷", name: "Turkey" },
+          brazil: { flag: "🇧🇷", name: "Brazil" },
+          greece: { flag: "🇬🇷", name: "Greece" },
+          athens: { flag: "🇬🇷", name: "Greece" },
+          santorini: { flag: "🇬🇷", name: "Greece" },
+          maldives: { flag: "🇲🇻", name: "Maldives" },
+          nepal: { flag: "🇳🇵", name: "Nepal" },
+          "sri lanka": { flag: "🇱🇰", name: "Sri Lanka" },
+          philippines: { flag: "🇵🇭", name: "Philippines" },
+          manila: { flag: "🇵🇭", name: "Philippines" },
+          portugal: { flag: "🇵🇹", name: "Portugal" },
+          lisbon: { flag: "🇵🇹", name: "Portugal" },
+          netherlands: { flag: "🇳🇱", name: "Netherlands" },
+          amsterdam: { flag: "🇳🇱", name: "Netherlands" },
+          switzerland: { flag: "🇨🇭", name: "Switzerland" },
+          austria: { flag: "🇦🇹", name: "Austria" },
+          denmark: { flag: "🇩🇰", name: "Denmark" },
+          sweden: { flag: "🇸🇪", name: "Sweden" },
+          norway: { flag: "🇳🇴", name: "Norway" },
+          poland: { flag: "🇵🇱", name: "Poland" },
+          malaysia: { flag: "🇲🇾", name: "Malaysia" },
+          "kuala lumpur": { flag: "🇲🇾", name: "Malaysia" },
+          "new zealand": { flag: "🇳🇿", name: "New Zealand" },
+          "south africa": { flag: "🇿🇦", name: "South Africa" },
+          egypt: { flag: "🇪🇬", name: "Egypt" },
+          kenya: { flag: "🇰🇪", name: "Kenya" },
+          morocco: { flag: "🇲🇦", name: "Morocco" },
+          "saudi arabia": { flag: "🇸🇦", name: "Saudi Arabia" },
+          riyadh: { flag: "🇸🇦", name: "Saudi Arabia" },
+          qatar: { flag: "🇶🇦", name: "Qatar" },
+          doha: { flag: "🇶🇦", name: "Qatar" },
           global: { flag: "🌍", name: "Global" },
           worldwide: { flag: "🌍", name: "Global" },
           international: { flag: "🌍", name: "Global" },
@@ -4081,9 +4251,8 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
         // 11. SUPPORT / CONTACT
         // ════════════════════════════════════════════════════════════════════
         if (
-          /support|contact|human|agent|speak.*to|talk.*to|live.*person|live.*agent|email.*support|reach.*you|get.*help|help.*me/i.test(
-            t,
-          )
+          /support|contact|human|agent|speak.*to|talk.*to|live.*person|live.*agent|email.*support|reach.*you|get.*help.*team|help.*me.*with.*my|i need help$|need.*assistance|customer.*service|customer.*care/i.test(t)
+          && !/help.*plan|help.*abroad|help.*connected|help.*buy|help.*find|help.*choose/i.test(t)
         ) {
           return {
             text: "We're here to help 24/7! Here's how to reach Zoiko Orbit: 🙋",
@@ -4421,6 +4590,154 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
         }
 
         // ════════════════════════════════════════════════════════════════════
+        // REAL USER PHRASING — natural language travel/connectivity intent
+        // Catches: "going to Bali", "need wifi on my trip", "roaming too expensive"
+        // "leaving tomorrow", "how do I stay connected", "internet for holiday"
+        // ════════════════════════════════════════════════════════════════════
+        if (
+          /going to|travelling to|traveling to|flying to|heading to|visiting|vacation in|holiday in|trip to|on my way to|i.?m in|landed in|arrived in/i.test(t)
+          && !/(travel.*agenc|partner|enterprise|business team)/i.test(t)
+        ) {
+          // Try to extract destination from the query
+          const destKeywords = Object.keys(multiDestKeys);
+          const foundDest = destKeywords.find(k => t.includes(k));
+          if (foundDest) {
+            return smartReply("I need an eSIM for " + multiDestKeys[foundDest]);
+          }
+          return smartReply("Show me all eSIM plans");
+        }
+
+        if (
+          /roaming.*expensiv|expensiv.*roaming|roaming.*bill|roaming.*charg|avoid.*roaming|no.*roaming|without.*roaming|instead.*roaming|cheaper.*roaming|save.*roaming|roaming.*fee/i.test(t)
+        ) {
+          return {
+            text: "Tired of expensive roaming charges? Zoiko Orbit eSIM saves you **40–80%** compared to your carrier's international roaming rates! 💰",
+            cards: [
+              makeInfoCard("💰", "Stop Paying Roaming Charges", [
+                { label: "Savings", val: "Save 40–80% vs carrier roaming", org: true },
+                { label: "How", val: "Buy a local eSIM plan — no roaming fees at all", org: true },
+                { label: "Coverage", val: "220+ countries worldwide", org: true },
+                { label: "Activation", val: "Under 2 minutes — QR code to email", org: true },
+                { label: "Your home number", val: "Still works alongside the eSIM", org: true },
+                { label: "No hidden fees", val: "Pay once — no surprise charges ever", org: true },
+              ]),
+              makeNotif("success", "💰", "Switching to a Zoiko Orbit eSIM eliminates carrier roaming charges entirely!"),
+              makeLinksBar([
+                { url: "https://zoikoorbit.com/plans/", label: "🌍 Browse eSIM Plans" },
+                { url: "https://zoikoorbit.com/coverage/", label: "Coverage Map" },
+              ]),
+              makeActionBar([
+                { label: "🌍 See Plans & Prices", action: "Show me all eSIM plans", type: "primary" },
+                { label: "📱 Check My Device", action: "Check if my device is compatible" },
+              ]),
+            ],
+          };
+        }
+
+        if (
+          /stay connected|keep connected|internet.*trip|internet.*travel|internet.*abroad|internet.*holiday|internet.*vacation|wifi.*travel|wifi.*trip|wifi.*abroad|data.*abroad|data.*travel|data.*overseas|connected.*abroad|online.*abroad|online.*travel|connectivity.*travel/i.test(t)
+        ) {
+          return smartReply("Show me all eSIM plans");
+        }
+
+        if (
+          /leaving.*tomorrow|leaving.*today|leaving.*tonight|fly.*tomorrow|fly.*today|travel.*tomorrow|trip.*tomorrow|trip.*next week|flight.*tomorrow|flight.*today|departing.*tomorrow|departing.*today/i.test(t)
+        ) {
+          return {
+            text: "Cutting it close? No problem — Zoiko Orbit eSIMs activate in **under 2 minutes**! ⚡ You can buy, receive your QR code, and be fully connected before you even reach the airport.",
+            cards: [
+              makeStepCard("GET CONNECTED IN UNDER 5 MINUTES", [
+                { label: "Buy now at zoikoorbit.com/plans/", sub: "Select your destination and duration" },
+                { label: "Check your email", sub: "QR code arrives instantly — check spam too!" },
+                { label: "Scan QR in Settings", sub: "Settings → Add eSIM → Scan QR code" },
+                { label: "You're ready! 🌍", sub: "Activate before you land for instant connectivity" },
+              ]),
+              makeNotif("warn", "⚡", "Pro tip: activate the eSIM before your flight — it'll be ready the moment you land!"),
+              makeLinksBar([
+                { url: "https://zoikoorbit.com/plans/", label: "🛒 Buy eSIM Now" },
+                { url: "https://zoikoorbit.com/support/", label: "Need Help?" },
+              ]),
+              makeActionBar([
+                { label: "🛒 Buy eSIM Now", action: "I want to buy an eSIM", type: "primary" },
+                { label: "📱 Check My Device", action: "Check if my device is compatible" },
+              ]),
+            ],
+          };
+        }
+
+        if (
+          /how.*much.*data|what.*data.*need|how.*long.*last|how many.*days|data.*expire|when.*expire|does it.*expire|auto.?renew|will it.*renew/i.test(t)
+        ) {
+          return {
+            text: "Great questions about plan details! Here's how Zoiko Orbit eSIM plans work: 📋",
+            cards: [
+              makeInfoCard("📋", "Plan Details — How It Works", [
+                { label: "Plan duration", val: "Varies by plan — 7, 15, 30 days and more", org: true },
+                { label: "Data amounts", val: "Varies by plan — from 1GB to unlimited per region", org: true },
+                { label: "Expiry", val: "Plan expires after the stated duration — no auto-renew", org: true },
+                { label: "Top up", val: "Buy a new plan when yours expires", org: true },
+                { label: "How much do I need?", val: "1GB ≈ 10hrs browsing / 2hrs streaming", org: true },
+                { label: "Live pricing", val: "Always check zoikoorbit.com/plans/ for current options", org: true },
+              ]),
+              makeNotif("info", "💡", "Travelling for a week? A 7-day plan with 5GB is perfect for maps, social media and messaging."),
+              makeLinksBar([
+                { url: "https://zoikoorbit.com/plans/", label: "📋 View All Plans" },
+                { url: "https://zoikoorbit.com/faqs/", label: "FAQs" },
+              ]),
+              makeActionBar([
+                { label: "🌍 Browse Plans", action: "Show me all eSIM plans", type: "primary" },
+                { label: "🎧 Ask Support", action: "I need support" },
+              ]),
+            ],
+          };
+        }
+
+        if (
+          /can.?t use phone|phone not work|sim not work|no service|lost signal|lost connection|dropped connection|keeps disconnecting|internet down|data down|not loading|slow internet|slow data|buffering|can.?t call|can.?t text|no bars|no reception/i.test(t)
+        ) {
+          return smartReply("I need help with my existing eSIM");
+        }
+
+        if (
+          /which plan|what plan|best plan|recommend.*plan|suggest.*plan|plan.*recommend|plan.*suggest|right plan|suitable plan|plan.*for me|for my needs|which.*should i/i.test(t)
+        ) {
+          return {
+            text: "I'd love to help you find the best plan! 🎯 The right plan depends on your destination and trip length.",
+            cards: [
+              makeInfoCard("🎯", "Finding Your Perfect Plan", [
+                { label: "Going to one country?", val: "Choose a regional plan for that destination", org: true },
+                { label: "Visiting multiple countries?", val: "A Global plan covers 220+ countries in one eSIM", org: true },
+                { label: "Short trip (< 2 weeks)?", val: "7-day or 15-day plans are most popular", org: true },
+                { label: "Long trip (> 2 weeks)?", val: "30-day plans offer the best value", org: true },
+                { label: "Light user?", val: "1–3GB is enough for maps, messaging and email", org: true },
+                { label: "Heavy user?", val: "5GB+ for streaming, video calls and navigation", org: true },
+              ]),
+              makeNotif("success", "✅", "All plans visible with live pricing at zoikoorbit.com/plans/ — filter by region and duration."),
+              makeLinksBar([
+                { url: "https://zoikoorbit.com/plans/", label: "🌍 Browse All Plans" },
+                { url: "https://zoikoorbit.com/coverage/", label: "Coverage Map" },
+              ]),
+              makeActionBar([
+                { label: "🌍 See All Plans", action: "Show me all eSIM plans", type: "primary" },
+                { label: "🌍 Global Plan", action: "I need a global eSIM plan" },
+              ]),
+            ],
+          };
+        }
+
+        if (
+          /will my phone work|will it work|does.*phone work|phone.*compatible|will.*iphone work|will.*samsung work|will.*android work|my phone.*work|work.*my phone|use my phone/i.test(t)
+        ) {
+          return smartReply("Check if my device is compatible");
+        }
+
+        if (
+          /how.*stay connected|stay.*connected|keep.*connected|get connected|get.*internet|get.*data|need.*internet|need.*data|need.*wifi|need.*connection|get.*online|get.*signal/i.test(t)
+        ) {
+          return smartReply("Show me all eSIM plans");
+        }
+
+        // ════════════════════════════════════════════════════════════════════
         // TRAVEL PLANS — specific handler (travel plans = eSIM plans at Zoiko)
         // ════════════════════════════════════════════════════════════════════
         if (
@@ -4456,9 +4773,7 @@ ABOUT ZOIKO (https://zoikoorbit.com/):
         // OFF-TOPIC / NO MATCH FALLBACK
         // ════════════════════════════════════════════════════════════════════
         const hasOrbitKw =
-          /esim|sim|plan|data|coverage|countr|device|phone|compat|activat|install|qr|travel|international|roaming|support|help|contact|refund|return|partner|agency|enterprise|business|about|zoiko|orbit|oriko|buy|purchase|price|cost|signal|network|connection|destination|trip|abroad/i.test(
-            t,
-          );
+          /esim|sim|plan|data|coverage|countr|device|phone|compat|activat|install|qr|travel|international|roaming|support|help|contact|refund|return|partner|agency|enterprise|business|about|zoiko|orbit|oriko|buy|purchase|price|cost|signal|network|connection|destination|trip|abroad|internet|wifi|holiday|vacation|flight|airport|overseas|connected|online|mobile|sim card|local|coverage|stay|visit|going|flying|heading|leaving|depart|land|arrive|global|worldwide|urgent|emergency|stuck|lost|works|working|compatible|unlock|unlocked|recharg|top.?up|renew|expire|data pack|data plan|roam/i.test(t);
 
         if (!hasOrbitKw) {
           return {
