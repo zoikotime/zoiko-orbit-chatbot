@@ -23,35 +23,66 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      # ── 4. Configure Docker for GCR ────────────────────────────────────────
-      - name: Configure Docker
-        run: gcloud auth configure-docker
+      # ── 4. Configure Docker for Artifact Registry ──────────────────────────
+      #
+      # ROOT CAUSE OF "denied: gcr.io repo does not exist" ERROR:
+      # gcr.io is the OLD Container Registry — your service account is missing
+      # the Storage Admin role needed to create repos on gcr.io.
+      #
+      # SOLUTION: Switch to Artifact Registry (GCP's current standard).
+      # Artifact Registry needs "Artifact Registry Writer" role — simpler.
+      # Command: gcloud auth configure-docker europe-west1-docker.pkg.dev
+      #
+      # ONE-TIME GCP SETUP (do this ONCE in GCP Console before pushing):
+      # 1. Go to GCP Console → Artifact Registry → Create Repository
+      #    Name: oriko   |  Format: Docker  |  Region: europe-west1
+      # 2. Go to IAM → find your service account → Add role:
+      #    "Artifact Registry Writer" + "Cloud Run Admin"
+      #
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker europe-west1-docker.pkg.dev
 
       # ── 5. Build Docker image ──────────────────────────────────────────────
       - name: Build Docker Image
         run: |
           docker build \
-            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:${{ github.sha }} \
-            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:latest \
+            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oriko/zoiko-orbit-chatbot:${{ github.sha }} \
+            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oriko/zoiko-orbit-chatbot:latest \
             .
 
       # ── 6. Push Docker image ───────────────────────────────────────────────
       - name: Push Docker Image
         run: |
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:${{ github.sha }}
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:latest
+          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oriko/zoiko-orbit-chatbot:${{ github.sha }}
+          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oriko/zoiko-orbit-chatbot:latest
 
-      # ── 7. Deploy to Cloud Run (FIXED SERVICE NAME + SECRETS) ──────────────
+      # ── 7. Deploy to Cloud Run ─────────────────────────────────────────────
+      #
+      # ROOT CAUSE OF --update-secrets NOT WORKING:
+      # --update-secrets reads from GCP SECRET MANAGER (a paid GCP product).
+      # Your 5 SMTP secrets are in GITHUB SECRETS (different system entirely).
+      # These are two completely separate secret stores.
+      #
+      # SOLUTION: Use --set-env-vars to inject GitHub Secrets as env vars.
+      # GitHub Actions replaces ${{ secrets.X }} with the actual value at
+      # runtime — it is then passed to Cloud Run as a plain env variable.
+      # app.py reads it via os.getenv() — secure, no hardcoding.
+      #
+      # GitHub Secrets required (repo Settings → Secrets → Actions):
+      #   GCP_PROJECT_ID  GCP_SA_KEY
+      #   SMTP_HOST       SMTP_PORT       SMTP_USER
+      #   SMTP_PASS       SUPPORT_EMAIL
+      #
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy zoiko-orbit-chatbot \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:${{ github.sha }} \
+            --image europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oriko/zoiko-orbit-chatbot:${{ github.sha }} \
             --platform managed \
             --region europe-west1 \
             --allow-unauthenticated \
             --max-instances 3 \
             --port 8080 \
-            --update-secrets SMTP_HOST=SMTP_HOST:latest,SMTP_PORT=SMTP_PORT:latest,SMTP_USER=SMTP_USER:latest,SMTP_PASS=SMTP_PASS:latest,SUPPORT_EMAIL=SUPPORT_EMAIL:latest
+            --set-env-vars "SMTP_HOST=${{ secrets.SMTP_HOST }},SMTP_PORT=${{ secrets.SMTP_PORT }},SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASS=${{ secrets.SMTP_PASS }},SUPPORT_EMAIL=${{ secrets.SUPPORT_EMAIL }}"
 
       # ── 8. Verify deployment health ────────────────────────────────────────
       - name: Verify Health Check
