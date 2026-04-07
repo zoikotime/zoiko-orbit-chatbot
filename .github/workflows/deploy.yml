@@ -1,31 +1,77 @@
-name: Zoikon Chatbot CI/CD
+name: Zoiko Orbit Chatbot CI/CD
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      # ── 1. Checkout code ───────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      # ── 2. Authenticate with Google Cloud ──────────────────────────────────
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
         with:
-          python-version: '3.10'
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Install dependencies
-        run: |
-          pip install fastapi uvicorn
+      # ── 3. Set up gcloud CLI ───────────────────────────────────────────────
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
 
-      - name: Validate backend
-        run: |
-          python -c "import backend.app"
+      # ── 4. Configure Docker for Google Container Registry ──────────────────
+      - name: Configure Docker
+        run: gcloud auth configure-docker
 
-      - name: Data update check
+      # ── 5. Build Docker image ──────────────────────────────────────────────
+      - name: Build Docker Image
         run: |
-          echo "Chatbot updated successfully"
+          docker build \
+            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/oriko:${{ github.sha }} \
+            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/oriko:latest \
+            .
+
+      # ── 6. Push to Google Container Registry ───────────────────────────────
+      - name: Push Docker Image
+        run: |
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/oriko:${{ github.sha }}
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/oriko:latest
+
+      # ── 7. Deploy to Cloud Run — SMTP secrets injected as env vars ─────────
+      #
+      # GitHub Secrets used here (set in repo Settings → Secrets → Actions):
+      #   GCP_PROJECT_ID  — your GCP project ID
+      #   GCP_SA_KEY      — JSON service account key
+      #   SMTP_HOST       — smtpout.secureserver.net
+      #   SMTP_PORT       — 465
+      #   SMTP_USER       — sending email address
+      #   SMTP_PASS       — SMTP password  ← NEVER hardcode this in app.py
+      #   SUPPORT_EMAIL   — info@zoikoorbit.com
+      #
+      # These are passed to Cloud Run as environment variables at deploy time.
+      # The running container reads them via os.getenv() — no plaintext in code.
+      #
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy oriko \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/oriko:${{ github.sha }} \
+            --platform managed \
+            --region europe-west1 \
+            --allow-unauthenticated \
+            --max-instances 3 \
+            --port 8080 \
+            --set-env-vars "SMTP_HOST=${{ secrets.SMTP_HOST }},SMTP_PORT=${{ secrets.SMTP_PORT }},SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASS=${{ secrets.SMTP_PASS }},SUPPORT_EMAIL=${{ secrets.SUPPORT_EMAIL }}"
+
+      # ── 8. Verify deployment health ────────────────────────────────────────
+      - name: Verify Health Check
+        run: |
+          SERVICE_URL=$(gcloud run services describe oriko \
+            --region europe-west1 \
+            --format 'value(status.url)')
+          echo "Service URL: $SERVICE_URL"
+          curl -f "$SERVICE_URL/health" || exit 1
+          echo "✅ Health check passed"
