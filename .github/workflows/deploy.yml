@@ -23,7 +23,7 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
 
-      # ── 4. Configure Docker for Google Container Registry ──────────────────
+      # ── 4. Configure Docker for GCR ────────────────────────────────────────
       - name: Configure Docker
         run: gcloud auth configure-docker
 
@@ -35,41 +35,33 @@ jobs:
             -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/oriko:latest \
             .
 
-      # ── 6. Push to Google Container Registry ───────────────────────────────
+      # ── 6. Push Docker image ───────────────────────────────────────────────
       - name: Push Docker Image
         run: |
           docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/oriko:${{ github.sha }}
           docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/oriko:latest
 
-      # ── 7. Deploy to Cloud Run — SMTP secrets injected as env vars ─────────
-      #
-      # GitHub Secrets used here (set in repo Settings → Secrets → Actions):
-      #   GCP_PROJECT_ID  — your GCP project ID
-      #   GCP_SA_KEY      — JSON service account key
-      #   SMTP_HOST       — smtpout.secureserver.net
-      #   SMTP_PORT       — 465
-      #   SMTP_USER       — sending email address
-      #   SMTP_PASS       — SMTP password  ← NEVER hardcode this in app.py
-      #   SUPPORT_EMAIL   — info@zoikoorbit.com
-      #
-      # These are passed to Cloud Run as environment variables at deploy time.
-      # The running container reads them via os.getenv() — no plaintext in code.
-      #
+      # ── 7. Deploy to Cloud Run (USING SECRET MANAGER) ──────────────────────
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy oriko \
+          gcloud run deploy zoiko-orbit-chatbot-git \
             --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/oriko:${{ github.sha }} \
             --platform managed \
             --region europe-west1 \
             --allow-unauthenticated \
             --max-instances 3 \
             --port 8080 \
-            --set-env-vars "SMTP_HOST=${{ secrets.SMTP_HOST }},SMTP_PORT=${{ secrets.SMTP_PORT }},SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASS=${{ secrets.SMTP_PASS }},SUPPORT_EMAIL=${{ secrets.SUPPORT_EMAIL }}"
+            --set-secrets \
+              SMTP_HOST=SMTP_HOST:latest,\
+SMTP_PORT=SMTP_PORT:latest,\
+SMTP_USER=SMTP_USER:latest,\
+SMTP_PASS=SMTP_PASS:latest,\
+SUPPORT_EMAIL=SUPPORT_EMAIL:latest
 
       # ── 8. Verify deployment health ────────────────────────────────────────
       - name: Verify Health Check
         run: |
-          SERVICE_URL=$(gcloud run services describe oriko \
+          SERVICE_URL=$(gcloud run services describe zoiko-orbit-chatbot-git \
             --region europe-west1 \
             --format 'value(status.url)')
           echo "Service URL: $SERVICE_URL"
