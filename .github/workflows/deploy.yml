@@ -15,13 +15,13 @@ jobs:
 
       # ── 2. Authenticate with Google Cloud ──────────────────────────────────
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       # ── 3. Set up gcloud CLI ───────────────────────────────────────────────
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@v2
 
       # ── 4. Configure Docker for GCR ────────────────────────────────────────
       - name: Configure Docker
@@ -31,37 +31,32 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build \
-            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/oriko:${{ github.sha }} \
-            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/oriko:latest \
+            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:${{ github.sha }} \
+            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:latest \
             .
 
       # ── 6. Push Docker image ───────────────────────────────────────────────
       - name: Push Docker Image
         run: |
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/oriko:${{ github.sha }}
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/oriko:latest
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:${{ github.sha }}
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:latest
 
-      # ── 7. Deploy to Cloud Run (USING SECRET MANAGER) ──────────────────────
+      # ── 7. Deploy to Cloud Run (FIXED SERVICE NAME + SECRETS) ──────────────
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy zoiko-orbit-chatbot-git \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/oriko:${{ github.sha }} \
+          gcloud run deploy zoiko-orbit-chatbot \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:${{ github.sha }} \
             --platform managed \
             --region europe-west1 \
             --allow-unauthenticated \
             --max-instances 3 \
             --port 8080 \
-            --set-secrets \
-              SMTP_HOST=SMTP_HOST:latest,\
-SMTP_PORT=SMTP_PORT:latest,\
-SMTP_USER=SMTP_USER:latest,\
-SMTP_PASS=SMTP_PASS:latest,\
-SUPPORT_EMAIL=SUPPORT_EMAIL:latest
+            --update-secrets SMTP_HOST=SMTP_HOST:latest,SMTP_PORT=SMTP_PORT:latest,SMTP_USER=SMTP_USER:latest,SMTP_PASS=SMTP_PASS:latest,SUPPORT_EMAIL=SUPPORT_EMAIL:latest
 
       # ── 8. Verify deployment health ────────────────────────────────────────
       - name: Verify Health Check
         run: |
-          SERVICE_URL=$(gcloud run services describe zoiko-orbit-chatbot-git \
+          SERVICE_URL=$(gcloud run services describe zoiko-orbit-chatbot \
             --region europe-west1 \
             --format 'value(status.url)')
           echo "Service URL: $SERVICE_URL"
