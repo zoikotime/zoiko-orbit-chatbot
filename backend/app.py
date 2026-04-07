@@ -33,11 +33,11 @@ app.add_middleware(
 #   SMTP_PASS     — SMTP password (never commit this value)
 #   SUPPORT_EMAIL — receives callback ticket notifications
 
-SMTP_HOST     = os.getenv("secrets.SMTP_HOST",     "")
-SMTP_PORT_STR = os.getenv("secrets.SMTP_PORT",     "465")
-SMTP_USER     = os.getenv("secrets.SMTP_USER",     "")
-SMTP_PASS     = os.getenv("secrets.SMTP_PASS",     "")
-SUPPORT_EMAIL = os.getenv("secrets.SUPPORT_EMAIL", "")
+SMTP_HOST     = os.getenv("SMTP_HOST",     "")
+SMTP_PORT_STR = os.getenv("SMTP_PORT",     "465")
+SMTP_USER     = os.getenv("SMTP_USER",     "")
+SMTP_PASS     = os.getenv("SMTP_PASS",     "")
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "")
 
 # Validate required secrets are present at startup — fail fast if missing
 _MISSING = [name for name, val in {
