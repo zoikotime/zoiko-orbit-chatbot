@@ -1,4 +1,4 @@
-# ── Zoiko Mobile Chatbot — Dockerfile ─────────────────────────────────────────
+# ── Zoiko orbit Chatbot — Dockerfile ─────────────────────────────────────────
 # Matches this exact folder structure:
 #   backend/app.py
 #   backend/retrain.py
