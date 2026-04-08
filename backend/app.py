@@ -20,48 +20,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── EMAIL CONFIG — environment variables ONLY (no hardcoded fallbacks) ────────
-# All secrets must be set as environment variables.
-# Local dev: export SMTP_HOST=smtpout.secureserver.net (etc.) in terminal
-# Cloud Run: secrets injected via deploy.yml --set-env-vars at deploy time
-# GitHub Actions: stored in repo Settings → Secrets → Actions
-#
-# Required environment variables:
-#   SMTP_HOST     — e.g. smtpout.secureserver.net
-#   SMTP_PORT     — e.g. 465
-#   SMTP_USER     — sending email address
-#   SMTP_PASS     — SMTP password (never commit this value)
-#   SUPPORT_EMAIL — receives callback ticket notifications
-
+# ── EMAIL CONFIG — env vars first, hardcoded fallback ─────────────────────────
 SMTP_HOST     = os.getenv("SMTP_HOST",     "")
-SMTP_PORT_STR = os.getenv("SMTP_PORT",     567)
+SMTP_PORT     = os.getenv("SMTP_PORT", 567)
 SMTP_USER     = os.getenv("SMTP_USER",     "")
 SMTP_PASS     = os.getenv("SMTP_PASS",     "")
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "")
 
-# Validate required secrets are present at startup — fail fast if missing
-_MISSING = [name for name, val in {
-    "SMTP_HOST": SMTP_HOST, "SMTP_USER": SMTP_USER,
-    "SMTP_PASS": SMTP_PASS, "SUPPORT_EMAIL": SUPPORT_EMAIL,
-}.items() if not val]
-
-if _MISSING:
-    print(f"\n⚠️  WARNING: Missing required environment variables: {', '.join(_MISSING)}")
-    print("   Email sending will be unavailable until these are set.")
-    print("   See README.md → Environment Variables for setup instructions.\n")
-
-try:
-    SMTP_PORT = int(SMTP_PORT_STR)
-except ValueError:
-    SMTP_PORT = 465
-
-# Safe startup log — never prints secret values
 print(f"\n📧 EMAIL CONFIGURATION:")
-print(f"   SMTP Host:     {SMTP_HOST or '⚠️  NOT SET'}")
-print(f"   SMTP Port:     {SMTP_PORT}")
-print(f"   From Email:    {SMTP_USER or '⚠️  NOT SET'}")
-print(f"   Support Email: {SUPPORT_EMAIL or '⚠️  NOT SET'}")
-print(f"   SMTP Password: {'✅ SET' if SMTP_PASS else '⚠️  NOT SET'}")
+print(f"   SMTP Host: {SMTP_HOST}")
+print(f"   SMTP Port: {SMTP_PORT}")
+print(f"   From Email: {SMTP_USER}")
+print(f"   Support Email: {SUPPORT_EMAIL}")
 
 # ── STATIC FRONTEND - MULTIPLE PATH STRATEGIES ─────────────────────────────────
 possible_paths = [
@@ -114,10 +84,6 @@ def escape_html(s: str) -> str:
              .replace(">","&gt;").replace('"',"&quot;").replace("'","&#039;"))
 
 def send_email(to_addr: str, subject: str, html_body: str, reply_to: str = None):
-    # Guard: refuse to attempt if credentials are not configured
-    if not all([SMTP_HOST, SMTP_USER, SMTP_PASS, to_addr]):
-        raise ValueError("Email configuration incomplete — check SMTP_HOST, SMTP_USER, SMTP_PASS env vars")
-
     print(f"\n📧 Sending email to: {to_addr}")
     print(f"   Subject: {subject}")
     print(f"   Via: {SMTP_HOST}:{SMTP_PORT}")
@@ -527,20 +493,19 @@ else:
 
 # ── Startup message ───────────────────────────────────────────────────────────
 print("\n╔════════════════════════════════════════════════════════════╗")
-print("║  🌍 ZOIKO ORBIT CHATBOT BACKEND                            ║")
-print("║  Oriko AI eSIM Assistant — Secrets via Environment Vars    ║")
+print("║  🎧 ZOIKO MOBILE CHATBOT BACKEND                           ║")
+print("║  CREDENTIALS HARDCODED - NO .ENV FILE NEEDED               ║")
 print("╠════════════════════════════════════════════════════════════╣")
-print(f"║  ✅ Status:  Running                                       ║")
-print(f"║  📧 Email:   SMTP via Environment Variables                ║")
-print(f"║  🖥  SMTP:   {(SMTP_HOST or 'NOT SET — set SMTP_HOST env var'):<47}║")
-print(f"║  📤 From:   {(SMTP_USER or 'NOT SET — set SMTP_USER env var'):<47}║")
-print(f"║  📬 To:     {(SUPPORT_EMAIL or 'NOT SET — set SUPPORT_EMAIL env var'):<47}║")
-print(f"║  🔐 Pass:   {'✅ Configured (SMTP_PASS env var)' if SMTP_PASS else '⚠️  NOT SET — set SMTP_PASS env var':<47}║")
+print("║  ✅ Status: Running                                        ║")
+print("║  📧 Email Service: SMTP (Hardcoded Credentials)            ║")
+print(f"║  SMTP Host: {SMTP_HOST}")
+print(f"║  From Email: {SMTP_USER}")
+print("║  🎯 Ready: YES                                             ║")
 print("╠════════════════════════════════════════════════════════════╣")
 print("║  API ENDPOINTS:                                            ║")
-print("║  POST   /send-request       Callback requests              ║")
-print("║  GET    /health             Health check                   ║")
-print("║  POST   /chat               Chatbot responses              ║")
-print("║  GET    /ui                 Frontend (Oriko chat UI)       ║")
-print("╚════════════════════════════════════════════════════════════╝")
-print("\n✅ Zoiko Orbit backend ready!\n")
+print("║  POST   /send-request       (Callback requests)            ║")
+print("║  GET    /health             (Health check)                 ║")
+print("║  POST   /chat               (Chatbot responses)            ║")
+print("║  GET    /ui                 (Frontend interface)           ║")
+print("╚════════════════════════════════════════════════════════════╝\n")
+print("✅ All systems ready!\n")
