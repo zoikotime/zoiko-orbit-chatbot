@@ -46,15 +46,15 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build \
-            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:${{ github.sha }} \
-            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:latest \
+            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot/zoiko-orbit-chatbot:${{ github.sha }} \
+            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot/zoiko-orbit-chatbot:latest \
             .
 
       # ── 6. Push Docker image ───────────────────────────────────────────────
       - name: Push Docker Image
         run: |
-          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:${{ github.sha }}
-          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:latest
+          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot/zoiko-orbit-chatbot:${{ github.sha }}
+          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot/zoiko-orbit-chatbot:latest
 
       # ── 7. Deploy to Cloud Run ─────────────────────────────────────────────
       #
@@ -76,7 +76,7 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy zoiko-orbit-chatbot \
-            --image europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot:${{ github.sha }} \
+            --image europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot/zoiko-orbit-chatbot:${{ github.sha }} \
             --platform managed \
             --region europe-west1 \
             --allow-unauthenticated \
