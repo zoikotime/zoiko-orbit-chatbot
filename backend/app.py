@@ -34,7 +34,7 @@ app.add_middleware(
 #   SUPPORT_EMAIL — receives callback ticket notifications
 
 SMTP_HOST     = os.getenv("SMTP_HOST",     "")
-SMTP_PORT_STR = os.getenv("SMTP_PORT",     465)
+SMTP_PORT_STR = os.getenv("SMTP_PORT",     567)
 SMTP_USER     = os.getenv("SMTP_USER",     "")
 SMTP_PASS     = os.getenv("SMTP_PASS",     "")
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "")
