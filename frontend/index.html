@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zoiko Orbit — Oriko AI Assistant</title>
+    <title>Zoiko Orbit — Oriko AI eSIM Assistant</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap"
       rel="stylesheet"
@@ -17,22 +17,22 @@
         padding: 0;
       }
       :root {
-        /* Swiggy-inspired palette */
-        --org: #fc8019;
-        --org-d: #e8722a;
-        --org-light: rgba(252, 128, 25, 0.12);
-        --org-glow: rgba(252, 128, 25, 0.3);
-        --teal: #00c9a7;
-        --teal-light: rgba(0, 201, 167, 0.12);
-        --dark: #0d0d0d;
-        --panel: #1a1a1a;
-        --card: #242424;
-        --card2: #2e2e2e;
+        /* Zoiko Orbit brand palette */
+        --org: #20C49A;           /* Primary teal-green from logo */
+        --org-d: #16977A;         /* Dark teal */
+        --org-light: rgba(32, 196, 154, 0.12);
+        --org-glow: rgba(32, 196, 154, 0.3);
+        --teal: #0B4167;          /* Deep navy blue from logo */
+        --teal-light: rgba(11, 65, 103, 0.15);
+        --dark: #030E1A;          /* Deep navy background */
+        --panel: #071825;         /* Navy panel */
+        --card: #0C2336;          /* Navy card */
+        --card2: #112D44;         /* Navy card2 */
         --border: rgba(255, 255, 255, 0.08);
-        --border-org: rgba(252, 128, 25, 0.25);
-        --text: #f5f5f5;
-        --muted: #888;
-        --muted2: #aaa;
+        --border-org: rgba(32, 196, 154, 0.25);
+        --text: #E8F4F1;          /* Slightly warm white text */
+        --muted: #7A9BAD;         /* Muted blue-grey */
+        --muted2: #9BB8C8;        /* Lighter blue-grey */
         --green: #48bb78;
         --red: #fc5c65;
         --gold: #ffd700;
@@ -68,12 +68,12 @@
         background:
           radial-gradient(
             ellipse 70% 50% at 20% 10%,
-            rgba(252, 128, 25, 0.08) 0%,
+            rgba(32, 196, 154, 0.10) 0%,
             transparent 60%
           ),
           radial-gradient(
             ellipse 50% 50% at 80% 80%,
-            rgba(0, 201, 167, 0.05) 0%,
+            rgba(11, 65, 103, 0.12) 0%,
             transparent 60%
           );
       }
@@ -82,7 +82,7 @@
         inset: 0;
         background-image: radial-gradient(
           circle,
-          rgba(252, 128, 25, 0.06) 1px,
+          rgba(32, 196, 154, 0.06) 1px,
           transparent 1px
         );
         background-size: 28px 28px;
@@ -111,9 +111,9 @@
         background: var(--panel);
         border: 1px solid var(--border);
         box-shadow:
-          0 0 0 1px rgba(252, 128, 25, 0.06),
+          0 0 0 1px rgba(32, 196, 154, 0.06),
           0 32px 80px rgba(0, 0, 0, 0.8),
-          0 0 60px rgba(252, 128, 25, 0.04);
+          0 0 60px rgba(32, 196, 154, 0.04);
         overflow: hidden;
         animation: widgetUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
       }
@@ -141,7 +141,7 @@
 
       /* ── HEADER — Swiggy app style ── */
       .hdr {
-        background: linear-gradient(180deg, #1e1008 0%, #1a1a1a 100%);
+        background: linear-gradient(180deg, #1e1008 0%, #071825 100%);
         border-bottom: 1px solid var(--border-org);
         padding: 12px 14px;
         flex-shrink: 0;
@@ -161,7 +161,7 @@
         inset: 0;
         background: linear-gradient(
           90deg,
-          rgba(252, 128, 25, 0.06) 0%,
+          rgba(32, 196, 154, 0.06) 0%,
           transparent 60%
         );
       }
@@ -329,7 +329,7 @@
 
       /* ── AGENT BAR ── */
       .agent-bar {
-        background: rgba(252, 128, 25, 0.06);
+        background: rgba(32, 196, 154, 0.06);
         border-bottom: 1px solid var(--border-org);
         padding: 6px 14px;
         display: flex;
@@ -370,7 +370,7 @@
         overflow: hidden;
         flex-shrink: 0;
         transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-        background: rgba(252, 128, 25, 0.05);
+        background: rgba(32, 196, 154, 0.05);
         border-bottom: 0 solid var(--border-org);
         display: flex;
         align-items: center;
@@ -387,7 +387,7 @@
       .tool-spin {
         width: 12px;
         height: 12px;
-        border: 2px solid rgba(252, 128, 25, 0.2);
+        border: 2px solid rgba(32, 196, 154, 0.2);
         border-top-color: var(--org);
         border-radius: 50%;
         animation: spin 0.7s linear infinite;
@@ -405,7 +405,7 @@
         overflow: hidden;
         flex-shrink: 0;
         transition: height 0.3s;
-        background: rgba(252, 128, 25, 0.04);
+        background: rgba(32, 196, 154, 0.04);
         border-bottom: 0 solid var(--border-org);
       }
       .vbar-wrap.on {
@@ -503,7 +503,7 @@
         width: 3px;
       }
       .msgs::-webkit-scrollbar-thumb {
-        background: rgba(252, 128, 25, 0.2);
+        background: rgba(32, 196, 154, 0.2);
         border-radius: 3px;
       }
 
@@ -517,7 +517,7 @@
         height: 44px;
         width: auto;
         object-fit: contain;
-        filter: drop-shadow(0 0 12px rgba(252, 128, 25, 0.4));
+        filter: drop-shadow(0 0 12px rgba(32, 196, 154, 0.4));
       }
       .wsub {
         font-size: 11.5px;
@@ -557,7 +557,7 @@
         border-radius: 20px;
         font-size: 11px;
         border: 1px solid var(--border);
-        background: rgba(252, 128, 25, 0.06);
+        background: rgba(32, 196, 154, 0.06);
         color: var(--org);
         cursor: pointer;
         transition: 0.18s;
@@ -574,7 +574,7 @@
       }
 
       .chip:hover {
-        background: rgba(252, 128, 25, 0.18);
+        background: rgba(32, 196, 154, 0.18);
         border-color: var(--border-org);
         transform: translateY(-1px);
       }
@@ -662,11 +662,11 @@
       }
 
       .msg.user .bubble {
-        background: linear-gradient(135deg, var(--org), var(--org-d));
+        background: linear-gradient(135deg, #0B4167, #20C49A);
         color: #fff;
         border-bottom-right-radius: 4px;
         font-weight: 500;
-        box-shadow: 0 4px 14px rgba(252, 128, 25, 0.3);
+        box-shadow: 0 4px 14px rgba(32, 196, 154, 0.3);
       }
       .msg.bot .bubble {
         background: var(--card);
@@ -735,7 +735,7 @@
       .react-btn:hover,
       .speak-btn:hover,
       .copy-btn:hover {
-        background: rgba(252, 128, 25, 0.08);
+        background: rgba(32, 196, 154, 0.08);
         color: var(--org);
         border-color: var(--border-org);
       }
@@ -778,7 +778,7 @@
         border-radius: 12px;
         font-size: 11px;
         border: 1px solid var(--border);
-        background: rgba(252, 128, 25, 0.05);
+        background: rgba(32, 196, 154, 0.05);
         color: var(--org);
         cursor: pointer;
         transition: 0.18s;
@@ -786,7 +786,7 @@
         font-family: var(--font-h);
       }
       .sug:hover {
-        background: rgba(252, 128, 25, 0.15);
+        background: rgba(32, 196, 154, 0.15);
         border-color: var(--border-org);
       }
 
@@ -845,7 +845,7 @@
         border-radius: 0 3px 3px 0;
       }
       .menu-card:hover {
-        background: rgba(252, 128, 25, 0.08);
+        background: rgba(32, 196, 154, 0.08);
         border-color: var(--border-org);
         transform: translateX(2px);
       }
@@ -914,7 +914,7 @@
         inset: 0;
         background: linear-gradient(
           135deg,
-          rgba(252, 128, 25, 0.06),
+          rgba(32, 196, 154, 0.06),
           transparent 60%
         );
         opacity: 0;
@@ -924,7 +924,7 @@
         border-color: var(--org);
         box-shadow:
           0 0 0 1px var(--org),
-          0 6px 20px rgba(252, 128, 25, 0.2);
+          0 6px 20px rgba(32, 196, 154, 0.2);
         transform: translateY(-2px);
       }
       .plan-card:hover::after {
@@ -1014,8 +1014,8 @@
       .info-card-hdr {
         background: linear-gradient(
           90deg,
-          rgba(252, 128, 25, 0.14),
-          rgba(252, 128, 25, 0.04)
+          rgba(32, 196, 154, 0.14),
+          rgba(32, 196, 154, 0.04)
         );
         padding: 10px 13px;
         display: flex;
@@ -1108,7 +1108,7 @@
         top: 26px;
         bottom: 0;
         width: 1.5px;
-        background: rgba(252, 128, 25, 0.15);
+        background: rgba(32, 196, 154, 0.15);
       }
       .step-item:last-child::before {
         display: none;
@@ -1125,7 +1125,7 @@
         font-weight: 800;
         color: var(--org);
         flex-shrink: 0;
-        background: rgba(252, 128, 25, 0.08);
+        background: rgba(32, 196, 154, 0.08);
         font-family: var(--font-h);
       }
       .step-body-title {
@@ -1153,7 +1153,7 @@
       .compare-hdr {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
-        background: rgba(252, 128, 25, 0.08);
+        background: rgba(32, 196, 154, 0.08);
         border-bottom: 1px solid var(--border);
       }
       .compare-hdr-cell {
@@ -1247,7 +1247,7 @@
       }
 
       .act-btn:hover {
-        background: rgba(252, 128, 25, 0.12);
+        background: rgba(32, 196, 154, 0.12);
         border-color: var(--border-org);
         color: var(--org);
         transform: translateY(-1px);
@@ -1259,12 +1259,12 @@
         background: var(--org);
         color: #fff;
         border-color: var(--org);
-        box-shadow: 0 4px 12px rgba(252, 128, 25, 0.35);
+        box-shadow: 0 4px 12px rgba(32, 196, 154, 0.35);
       }
       .act-btn.primary:hover {
         background: var(--org-d);
         transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(252, 128, 25, 0.45);
+        box-shadow: 0 6px 18px rgba(32, 196, 154, 0.45);
       }
       .act-btn.green {
         background: var(--green);
@@ -1292,8 +1292,8 @@
         color: var(--green);
       }
       .notif-strip.info {
-        background: rgba(252, 128, 25, 0.07);
-        border: 1px solid rgba(252, 128, 25, 0.2);
+        background: rgba(32, 196, 154, 0.07);
+        border: 1px solid rgba(32, 196, 154, 0.2);
         color: var(--org);
       }
       .notif-strip.warn {
@@ -1302,8 +1302,8 @@
         color: #ffb347;
       }
       .notif-strip.teal {
-        background: rgba(0, 201, 167, 0.07);
-        border: 1px solid rgba(0, 201, 167, 0.2);
+        background: rgba(11, 65, 103, 0.07);
+        border: 1px solid rgba(11, 65, 103, 0.2);
         color: var(--teal);
       }
 
@@ -1504,7 +1504,7 @@
       }
       .txt:focus {
         border-color: var(--border-org);
-        box-shadow: 0 0 0 3px rgba(252, 128, 25, 0.08);
+        box-shadow: 0 0 0 3px rgba(32, 196, 154, 0.08);
       }
       .ibtn {
         width: 40px;
@@ -1531,7 +1531,7 @@
       }
 
       .ibtn:hover {
-        background: rgba(252, 128, 25, 0.1);
+        background: rgba(32, 196, 154, 0.1);
         color: var(--org);
         border-color: var(--border-org);
       }
@@ -1540,7 +1540,7 @@
         height: 40px;
         border-radius: 11px;
         border: none;
-        background: linear-gradient(135deg, var(--org), var(--org-d));
+        background: linear-gradient(135deg, #0B4167, #20C49A);
         color: #fff;
         cursor: pointer;
         display: flex;
@@ -1548,7 +1548,7 @@
         justify-content: center;
         font-size: 16px;
         flex-shrink: 0;
-        box-shadow: 0 4px 12px rgba(252, 128, 25, 0.4);
+        box-shadow: 0 4px 12px rgba(32, 196, 154, 0.4);
         transition: 0.18s;
       }
 
@@ -1557,13 +1557,13 @@
           width: 36px;
           height: 36px;
           font-size: 15px;
-          box-shadow: 0 2px 8px rgba(252, 128, 25, 0.4);
+          box-shadow: 0 2px 8px rgba(32, 196, 154, 0.4);
         }
       }
 
       .send:hover {
         transform: scale(1.06);
-        box-shadow: 0 6px 18px rgba(252, 128, 25, 0.55);
+        box-shadow: 0 6px 18px rgba(32, 196, 154, 0.55);
       }
       .send:active {
         transform: scale(0.96);
@@ -1896,8 +1896,8 @@
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        background: rgba(252, 128, 25, 0.1);
-        border: 1px solid rgba(252, 128, 25, 0.28);
+        background: rgba(32, 196, 154, 0.1);
+        border: 1px solid rgba(32, 196, 154, 0.28);
         border-radius: 9px;
         padding: 7px 13px;
         color: var(--org);
@@ -1910,9 +1910,9 @@
         cursor: pointer;
       }
       .link-btn:hover {
-        background: rgba(252, 128, 25, 0.22);
+        background: rgba(32, 196, 154, 0.22);
         transform: translateY(-1px);
-        box-shadow: 0 3px 10px rgba(252, 128, 25, 0.25);
+        box-shadow: 0 3px 10px rgba(32, 196, 154, 0.25);
       }
       .link-btn:active {
         transform: scale(0.97);
