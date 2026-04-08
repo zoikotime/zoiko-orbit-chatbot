@@ -1,69 +1,95 @@
 name: Zoiko Orbit Chatbot CI/CD
 
 on:
-push:
-branches: [main]
+  push:
+    branches: [main]
 
 jobs:
-deploy:
-runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-latest
 
-```
-steps:
-  # ── 1. Checkout code ───────────────────────────────────────────────
-  - name: Checkout
-    uses: actions/checkout@v3
+    steps:
+      # ── 1. Checkout code ───────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v3
 
-  # ── 2. Authenticate with Google Cloud ─────────────────────────────
-  - name: Authenticate to Google Cloud
-    uses: google-github-actions/auth@v2
-    with:
-      credentials_json: ${{ secrets.GCP_SA_KEY }}
+      # ── 2. Authenticate with Google Cloud ──────────────────────────────────
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-  # ── 3. Set up gcloud CLI ──────────────────────────────────────────
-  - name: Set up Cloud SDK
-    uses: google-github-actions/setup-gcloud@v2
+      # ── 3. Set up gcloud CLI ───────────────────────────────────────────────
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
 
-  # ── 4. Configure Docker for Artifact Registry ─────────────────────
-  - name: Configure Docker
-    run: gcloud auth configure-docker europe-west1-docker.pkg.dev
+      # ── 4. Configure Docker for Artifact Registry ──────────────────────────
+      #
+      # ROOT CAUSE OF "denied: gcr.io repo does not exist" ERROR:
+      # gcr.io is the OLD Container Registry — your service account is missing
+      # the Storage Admin role needed to create repos on gcr.io.
+      #
+      # SOLUTION: Switch to Artifact Registry (GCP's current standard).
+      # Artifact Registry needs "Artifact Registry Writer" role — simpler.
+      # Command: gcloud auth configure-docker europe-west1-docker.pkg.dev
+      #
+      # ONE-TIME GCP SETUP (do this ONCE in GCP Console before pushing):
+      # 1. Go to GCP Console → Artifact Registry → Create Repository
+      #    Name: oriko   |  Format: Docker  |  Region: europe-west1
+      # 2. Go to IAM → find your service account → Add role:
+      #    "Artifact Registry Writer" + "Cloud Run Admin"
+      #
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker europe-west1-docker.pkg.dev
 
-  # ── 5. Build Docker image (FIXED: added IMAGE name "app") ─────────
-  - name: Build Docker Image
-    run: |
-      docker build \
-        -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot/app:${{ github.sha }} \
-        -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot/app:latest \
-        .
+      # ── 5. Build Docker image ──────────────────────────────────────────────
+      - name: Build Docker Image
+        run: |
+          docker build \
+            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oriko/zoiko-orbit-chatbot:${{ github.sha }} \
+            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oriko/zoiko-orbit-chatbot:latest \
+            .
 
-  # ── 6. Push Docker image ──────────────────────────────────────────
-  - name: Push Docker Image
-    run: |
-      docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot/app:${{ github.sha }}
-      docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot/app:latest
+      # ── 6. Push Docker image ───────────────────────────────────────────────
+      - name: Push Docker Image
+        run: |
+          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oriko/zoiko-orbit-chatbot:${{ github.sha }}
+          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oriko/zoiko-orbit-chatbot:latest
 
-  # ── 7. Deploy to Cloud Run ────────────────────────────────────────
-  - name: Deploy to Cloud Run
-    run: |
-      gcloud run deploy zoiko-orbit-chatbot \
-        --image europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/zoiko-orbit-chatbot/app:${{ github.sha }} \
-        --platform managed \
-        --region europe-west1 \
-        --allow-unauthenticated \
-        --max-instances 3 \
-        --port 8080 \
-        --set-env-vars "SMTP_HOST=${{ secrets.SMTP_HOST }},SMTP_PORT=${{ secrets.SMTP_PORT }},SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASS=${{ secrets.SMTP_PASS }},SUPPORT_EMAIL=${{ secrets.SUPPORT_EMAIL }}"
+      # ── 7. Deploy to Cloud Run ─────────────────────────────────────────────
+      #
+      # ROOT CAUSE OF --update-secrets NOT WORKING:
+      # --update-secrets reads from GCP SECRET MANAGER (a paid GCP product).
+      # Your 5 SMTP secrets are in GITHUB SECRETS (different system entirely).
+      # These are two completely separate secret stores.
+      #
+      # SOLUTION: Use --set-env-vars to inject GitHub Secrets as env vars.
+      # GitHub Actions replaces ${{ secrets.X }} with the actual value at
+      # runtime — it is then passed to Cloud Run as a plain env variable.
+      # app.py reads it via os.getenv() — secure, no hardcoding.
+      #
+      # GitHub Secrets required (repo Settings → Secrets → Actions):
+      #   GCP_PROJECT_ID  GCP_SA_KEY
+      #   SMTP_HOST       SMTP_PORT       SMTP_USER
+      #   SMTP_PASS       SUPPORT_EMAIL
+      #
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy zoiko-orbit-chatbot \
+            --image europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oriko/zoiko-orbit-chatbot:${{ github.sha }} \
+            --platform managed \
+            --region europe-west1 \
+            --allow-unauthenticated \
+            --max-instances 3 \
+            --port 8080 \
+            --set-env-vars "SMTP_HOST=${{ secrets.SMTP_HOST }},SMTP_PORT=${{ secrets.SMTP_PORT }},SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASS=${{ secrets.SMTP_PASS }},SUPPORT_EMAIL=${{ secrets.SUPPORT_EMAIL }}"
 
-  # ── 8. Verify deployment ──────────────────────────────────────────
-  - name: Verify Health Check
-    run: |
-      SERVICE_URL=$(gcloud run services describe zoiko-orbit-chatbot \
-        --region europe-west1 \
-        --format 'value(status.url)')
-      
-      echo "Service URL: $SERVICE_URL"
-
-      curl -f "$SERVICE_URL/health" || exit 1
-
-      echo "✅ Health check passed"
-```
+      # ── 8. Verify deployment health ────────────────────────────────────────
+      - name: Verify Health Check
+        run: |
+          SERVICE_URL=$(gcloud run services describe zoiko-orbit-chatbot \
+            --region europe-west1 \
+            --format 'value(status.url)')
+          echo "Service URL: $SERVICE_URL"
+          curl -f "$SERVICE_URL/health" || exit 1
+          echo "✅ Health check passed"
