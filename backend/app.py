@@ -20,18 +20,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── EMAIL CONFIG — env vars first, hardcoded fallback ─────────────────────────
+# ── EMAIL CONFIG — environment variables ONLY (no hardcoded fallbacks) ────────
+# All secrets must be set as environment variables.
+# Local dev: export SMTP_HOST=smtpout.secureserver.net (etc.) in terminal
+# Cloud Run: secrets injected via deploy.yml --set-env-vars at deploy time
+# GitHub Actions: stored in repo Settings → Secrets → Actions
+#
+# Required environment variables:
+#   SMTP_HOST     — e.g. smtpout.secureserver.net
+#   SMTP_PORT     — e.g. 465
+#   SMTP_USER     — sending email address
+#   SMTP_PASS     — SMTP password (never commit this value)
+#   SUPPORT_EMAIL — receives callback ticket notifications
+
 SMTP_HOST     = os.getenv("SMTP_HOST",     "")
-SMTP_PORT     = os.getenv("SMTP_PORT", 567)
+SMTP_PORT_STR = os.getenv("SMTP_PORT",     567)
 SMTP_USER     = os.getenv("SMTP_USER",     "")
 SMTP_PASS     = os.getenv("SMTP_PASS",     "")
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "")
 
+# Validate required secrets are present at startup — fail fast if missing
+_MISSING = [name for name, val in {
+    "SMTP_HOST": SMTP_HOST, "SMTP_USER": SMTP_USER,
+    "SMTP_PASS": SMTP_PASS, "SUPPORT_EMAIL": SUPPORT_EMAIL,
+}.items() if not val]
+
+if _MISSING:
+    print(f"\n⚠️  WARNING: Missing required environment variables: {', '.join(_MISSING)}")
+    print("   Email sending will be unavailable until these are set.")
+    print("   See README.md → Environment Variables for setup instructions.\n")
+
+try:
+    SMTP_PORT = int(SMTP_PORT_STR)
+except ValueError:
+    SMTP_PORT = 465
+
+# Safe startup log — never prints secret values
 print(f"\n📧 EMAIL CONFIGURATION:")
-print(f"   SMTP Host: {SMTP_HOST}")
-print(f"   SMTP Port: {SMTP_PORT}")
-print(f"   From Email: {SMTP_USER}")
-print(f"   Support Email: {SUPPORT_EMAIL}")
+print(f"   SMTP Host:     {SMTP_HOST or '⚠️  NOT SET'}")
+print(f"   SMTP Port:     {SMTP_PORT}")
+print(f"   From Email:    {SMTP_USER or '⚠️  NOT SET'}")
+print(f"   Support Email: {SUPPORT_EMAIL or '⚠️  NOT SET'}")
+print(f"   SMTP Password: {'✅ SET' if SMTP_PASS else '⚠️  NOT SET'}")
 
 # ── STATIC FRONTEND - MULTIPLE PATH STRATEGIES ─────────────────────────────────
 possible_paths = [
@@ -67,7 +97,7 @@ class Message(BaseModel):
 # ── HELPERS ───────────────────────────────────────────────────────────────────
 def gen_ref_id():
     """Generate reference ID from timestamp"""
-    return "ZKN-" + str(int(time.time() * 1000))[-6:]
+    return "ORB-" + str(int(time.time() * 1000))[-6:]
 
 def valid_email(e: str) -> bool:
     """Validate email format"""
@@ -84,6 +114,10 @@ def escape_html(s: str) -> str:
              .replace(">","&gt;").replace('"',"&quot;").replace("'","&#039;"))
 
 def send_email(to_addr: str, subject: str, html_body: str, reply_to: str = None):
+    # Guard: refuse to attempt if credentials are not configured
+    if not all([SMTP_HOST, SMTP_USER, SMTP_PASS, to_addr]):
+        raise ValueError("Email configuration incomplete — check SMTP_HOST, SMTP_USER, SMTP_PASS env vars")
+
     print(f"\n📧 Sending email to: {to_addr}")
     print(f"   Subject: {subject}")
     print(f"   Via: {SMTP_HOST}:{SMTP_PORT}")
@@ -111,7 +145,7 @@ async def send_request_form():
     <html>
     <head><title>Send Callback Request</title></head>
     <body>
-        <h2>Zoiko Mobile Callback Request</h2>
+        <h2>Zoiko Orbit Callback Request</h2>
         <form method="post" action="/send-request">
             Name:<br>
             <input name="name"><br><br>
@@ -168,7 +202,7 @@ async def send_request(data: CallbackRequest):
         body {{ font-family: 'Segoe UI', Arial, sans-serif; color: #333; line-height: 1.6; }}
         .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
         .header {{ 
-          background: linear-gradient(135deg, #CC0000, #880000); 
+          background: linear-gradient(135deg, #fc8019, #e8722a); 
           color: white; 
           padding: 25px; 
           border-radius: 8px 8px 0 0; 
@@ -184,7 +218,7 @@ async def send_request(data: CallbackRequest):
         .field {{ margin-bottom: 20px; }}
         .label {{ 
           font-weight: 700; 
-          color: #CC0000; 
+          color: #fc8019; 
           margin-bottom: 8px;
           font-size: 12px;
           text-transform: uppercase;
@@ -194,7 +228,7 @@ async def send_request(data: CallbackRequest):
           color: #333; 
           padding: 12px; 
           background: white; 
-          border-left: 4px solid #CC0000;
+          border-left: 4px solid #fc8019;
           border-radius: 2px;
         }}
         .footer {{ 
@@ -205,15 +239,15 @@ async def send_request(data: CallbackRequest):
           color: #666;
           border-top: 1px solid #ddd;
         }}
-        .ref-id {{ color: #CC0000; font-weight: bold; font-size: 14px; }}
+        .ref-id {{ color: #fc8019; font-weight: bold; font-size: 14px; }}
         .timestamp {{ color: #999; font-size: 11px; margin-top: 10px; }}
-        a {{ color: #CC0000; text-decoration: none; }}
+        a {{ color: #fc8019; text-decoration: none; }}
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
-          <h2>🎧 New Callback Request</h2>
+          <h2>🌍 New Callback Request - Zoiko Orbit</h2>
         </div>
         
         <div class="content">
@@ -241,7 +275,7 @@ async def send_request(data: CallbackRequest):
         <div class="footer">
           <p><span class="ref-id">Reference: {ref_id}</span></p>
           <p class="timestamp">Received: {timestamp}</p>
-          <p style="margin-top: 10px;">© 2026 Zoiko Mobile Support</p>
+          <p style="margin-top: 10px;">© 2026 Zoiko Orbit Support</p>
         </div>
       </div>
     </body>
@@ -257,7 +291,7 @@ async def send_request(data: CallbackRequest):
         body {{ font-family: 'Segoe UI', Arial, sans-serif; color: #333; line-height: 1.6; }}
         .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
         .header {{ 
-          background: linear-gradient(135deg, #CC0000, #880000); 
+          background: linear-gradient(135deg, #fc8019, #e8722a); 
           color: white; 
           padding: 40px 25px;
           border-radius: 8px 8px 0 0; 
@@ -277,15 +311,15 @@ async def send_request(data: CallbackRequest):
         }}
         .content p {{ margin: 15px 0; }}
         .info-box {{ 
-          background: #fff0f0; 
-          border-left: 4px solid #CC0000; 
+          background: #fff5f0; 
+          border-left: 4px solid #fc8019; 
           padding: 15px; 
           margin: 20px 0;
           border-radius: 2px;
         }}
         .ref-box {{ 
-          background: #fff8e1; 
-          border: 2px solid #CC0000; 
+          background: #fffaf5; 
+          border: 2px solid #fc8019; 
           padding: 15px; 
           border-radius: 5px; 
           margin: 20px 0; 
@@ -293,7 +327,7 @@ async def send_request(data: CallbackRequest):
         }}
         .ref-id {{ 
           font-size: 20px; 
-          color: #CC0000; 
+          color: #fc8019; 
           font-weight: bold;
           display: block;
           margin: 10px 0;
@@ -312,10 +346,10 @@ async def send_request(data: CallbackRequest):
         }}
         .contact-item:last-child {{ border-bottom: none; }}
         .contact-label {{ 
-          color: #CC0000; 
+          color: #fc8019; 
           font-weight: bold;
         }}
-        a {{ color: #CC0000; text-decoration: none; }}
+        a {{ color: #fc8019; text-decoration: none; }}
         a:hover {{ text-decoration: underline; }}
         .footer {{ 
           background: #f9f9f9; 
@@ -326,7 +360,7 @@ async def send_request(data: CallbackRequest):
           border-top: 1px solid #ddd;
         }}
         .footer-text {{ margin: 5px 0; }}
-        .highlight {{ color: #CC0000; font-weight: bold; }}
+        .highlight {{ color: #fc8019; font-weight: bold; }}
       </style>
     </head>
     <body>
@@ -339,11 +373,11 @@ async def send_request(data: CallbackRequest):
         <div class="content">
           <p style="font-size: 16px;">Hi <span class="highlight">{first_name}</span>,</p>
           
-          <p>Thank you for reaching out to Zoiko Mobile! We've received your callback request and our support team will contact you within <strong>24 hours</strong>.</p>
+          <p>Thank you for reaching out to Zoiko Orbit! We've received your callback request and our support team will contact you within <strong>24 hours</strong>.</p>
           
           <div class="info-box">
             <strong style="display: block; margin-bottom: 8px;">📞 We'll call you at:</strong>
-            <span style="font-size: 16px; color: #CC0000; font-weight: bold;">{clean_phone}</span>
+            <span style="font-size: 16px; color: #fc8019; font-weight: bold;">{clean_phone}</span>
           </div>
           
           <div class="ref-box">
@@ -352,34 +386,35 @@ async def send_request(data: CallbackRequest):
             <span style="font-size: 11px; color: #666;">Keep this for your records</span>
           </div>
           
-          <h3 style="color: #333; margin: 25px 0 15px 0; font-size: 16px;">Can't wait? Quick contact options:</h3>
+          <h3 style="color: #333; margin: 25px 0 15px 0; font-size: 16px;">Can't wait? Reach us directly:</h3>
           
           <div class="quick-contact">
             <div class="contact-item">
-              <span class="contact-label">📞 Call 24/7:</span>
-              <a href="tel:+18009888116">800-988-8116</a>
+              <span class="contact-label">📧 Email (24/7):</span>
+              <a href="mailto:info@zoikoorbit.com">info@zoikoorbit.com</a>
             </div>
             <div class="contact-item">
-              <span class="contact-label">🌐 Visit us:</span>
-              <a href="https://zoikomobile.com">zoikomobile.com</a>
+              <span class="contact-label">❓ FAQs:</span>
+              <a href="https://zoikoorbit.com/faqs/">zoikoorbit.com/faqs/</a>
             </div>
             <div class="contact-item">
-              <span class="contact-label">💬 Live Chat:</span>
-              Available on our website (business hours)
+              <span class="contact-label">📋 Help Center:</span>
+              <a href="https://zoikoorbit.com/support/">zoikoorbit.com/support/</a>
             </div>
             <div class="contact-item">
-              <span class="contact-label">📧 Email:</span>
-              <a href="mailto:support@zoikomobile.com">support@zoikomobile.com</a>
+              <span class="contact-label">🌐 Website:</span>
+              <a href="https://zoikoorbit.com">zoikoorbit.com</a>
             </div>
           </div>
           
           <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-            Thanks for choosing Zoiko Mobile! 💚
+            Thanks for choosing Zoiko Orbit — stay connected everywhere! 🌍✈️
           </p>
         </div>
         
         <div class="footer">
-          <p class="footer-text">© 2026 Zoiko Mobile. All rights reserved.</p>
+          <p class="footer-text">© 2026 Zoiko Orbit. All rights reserved.</p>
+          <p class="footer-text"><a href="https://zoikoorbit.com" style="color: #fc8019;">zoikoorbit.com</a></p>
           <p class="footer-text" style="font-size: 10px; color: #999;">
             <em>Your information is secure and will never be shared with third parties.</em>
           </p>
@@ -420,7 +455,7 @@ async def send_request(data: CallbackRequest):
     try:
         send_email(
             clean_email,
-            f"✅ We Received Your Request — Zoiko Mobile ({ref_id})",
+            f"✅ We Received Your Request — Zoiko Orbit ({ref_id})",
             user_html
         )
         user_sent = True
@@ -459,7 +494,7 @@ async def health():
     return {
         "status":  "✅ Server is healthy",
         "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "service": "Zoiko Mobile Chatbot Backend",
+        "service": "Zoiko Orbit Chatbot Backend",
         "version": "2.0",
         "email_configured": True,
         "smtp_host": SMTP_HOST,
@@ -493,19 +528,20 @@ else:
 
 # ── Startup message ───────────────────────────────────────────────────────────
 print("\n╔════════════════════════════════════════════════════════════╗")
-print("║  🎧 ZOIKO MOBILE CHATBOT BACKEND                           ║")
-print("║  CREDENTIALS HARDCODED - NO .ENV FILE NEEDED               ║")
+print("║  🌍 ZOIKO ORBIT CHATBOT BACKEND                            ║")
+print("║  Oriko AI eSIM Assistant — Secrets via Environment Vars    ║")
 print("╠════════════════════════════════════════════════════════════╣")
-print("║  ✅ Status: Running                                        ║")
-print("║  📧 Email Service: SMTP (Hardcoded Credentials)            ║")
-print(f"║  SMTP Host: {SMTP_HOST}")
-print(f"║  From Email: {SMTP_USER}")
-print("║  🎯 Ready: YES                                             ║")
+print(f"║  ✅ Status:  Running                                       ║")
+print(f"║  📧 Email:   SMTP via Environment Variables                ║")
+print(f"║  🖥  SMTP:   {(SMTP_HOST or 'NOT SET — set SMTP_HOST env var'):<47}║")
+print(f"║  📤 From:   {(SMTP_USER or 'NOT SET — set SMTP_USER env var'):<47}║")
+print(f"║  📬 To:     {(SUPPORT_EMAIL or 'NOT SET — set SUPPORT_EMAIL env var'):<47}║")
+print(f"║  🔐 Pass:   {'✅ Configured (SMTP_PASS env var)' if SMTP_PASS else '⚠️  NOT SET — set SMTP_PASS env var':<47}║")
 print("╠════════════════════════════════════════════════════════════╣")
 print("║  API ENDPOINTS:                                            ║")
-print("║  POST   /send-request       (Callback requests)            ║")
-print("║  GET    /health             (Health check)                 ║")
-print("║  POST   /chat               (Chatbot responses)            ║")
-print("║  GET    /ui                 (Frontend interface)           ║")
-print("╚════════════════════════════════════════════════════════════╝\n")
-print("✅ All systems ready!\n")
+print("║  POST   /send-request       Callback requests              ║")
+print("║  GET    /health             Health check                   ║")
+print("║  POST   /chat               Chatbot responses              ║")
+print("║  GET    /ui                 Frontend (Oriko chat UI)       ║")
+print("╚════════════════════════════════════════════════════════════╝")
+print("\n✅ Zoiko Orbit backend ready!\n")
